@@ -64,7 +64,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aditya.ping.data.PingDatabase
 import com.aditya.ping.util.AlarmScheduler
+import com.aditya.ping.util.NagScheduler
 import com.aditya.ping.util.QuickActionExecutor
+import com.aditya.ping.util.RecurrenceCalculator
 import com.aditya.ping.util.SmartSnooze
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -132,6 +134,7 @@ class AlarmActivity : ComponentActivity() {
                     { reminder?.let { QuickActionExecutor.execute(this, it) } }
                 } else null,
                 onDismiss = {
+                    dismissAlarm(reminderId)
                     stopAlarm()
                     finish()
                 },
@@ -146,6 +149,18 @@ class AlarmActivity : ComponentActivity() {
                     finish()
                 },
             )
+        }
+    }
+
+    private fun dismissAlarm(reminderId: Long) {
+        NagScheduler.cancel(this, reminderId)
+        CoroutineScope(Dispatchers.IO).launch {
+            val dao = PingDatabase.get(this@AlarmActivity).reminderDao()
+            val reminder = dao.getById(reminderId) ?: return@launch
+            // For non-recurring reminders, mark as completed
+            if (RecurrenceCalculator.nextOccurrence(reminder, System.currentTimeMillis()) == null) {
+                dao.setCompleted(reminderId, true)
+            }
         }
     }
 
@@ -207,6 +222,7 @@ class AlarmActivity : ComponentActivity() {
     }
 
     private fun snooze(reminderId: Long, title: String, note: String) {
+        NagScheduler.cancel(this@AlarmActivity, reminderId)
         CoroutineScope(Dispatchers.IO).launch {
             val dao = PingDatabase.get(this@AlarmActivity).reminderDao()
             val reminder = dao.getById(reminderId) ?: return@launch
@@ -219,6 +235,7 @@ class AlarmActivity : ComponentActivity() {
     }
 
     private fun snoozeTo(reminderId: Long, newDueAt: Long) {
+        NagScheduler.cancel(this@AlarmActivity, reminderId)
         CoroutineScope(Dispatchers.IO).launch {
             val dao = PingDatabase.get(this@AlarmActivity).reminderDao()
             val reminder = dao.getById(reminderId) ?: return@launch
