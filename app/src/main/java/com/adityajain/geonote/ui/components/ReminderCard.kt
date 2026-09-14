@@ -9,10 +9,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Login
+import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.outlined.LogOut
-import androidx.compose.material.icons.outlined.Login
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -47,7 +47,7 @@ fun ReminderCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = if (reminder.triggerType == 0) Icons.Outlined.Login else Icons.Outlined.LogOut,
+                imageVector = if (reminder.triggerType == 0) Icons.AutoMirrored.Outlined.Login else Icons.AutoMirrored.Outlined.Logout,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(28.dp),

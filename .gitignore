@@ -26,3 +26,4 @@ captures/
 
 # Kotlin
 *.kotlin_metadata
+.kotlin/
