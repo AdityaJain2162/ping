@@ -5,9 +5,14 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [ReminderEntity::class], version = 5, exportSchema = false)
+@Database(
+    entities = [ReminderEntity::class, SavedPlaceEntity::class],
+    version = 6,
+    exportSchema = false,
+)
 abstract class PingDatabase : RoomDatabase() {
     abstract fun reminderDao(): ReminderDao
+    abstract fun savedPlaceDao(): SavedPlaceDao
 
     companion object {
         @Volatile private var INSTANCE: PingDatabase? = null

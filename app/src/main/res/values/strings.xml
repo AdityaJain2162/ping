@@ -22,6 +22,14 @@
     <string name="add_recurrence_interval">Every N days</string>
     <string name="add_nag_toggle">Keep nagging until done</string>
     <string name="add_nag_interval">Nag interval (minutes)</string>
+
+    <!-- Saved Places -->
+    <string name="saved_places_title">Saved Places</string>
+    <string name="saved_places_name">Place name</string>
+    <string name="saved_places_pick">Use current location</string>
+    <string name="saved_places_radius">Radius (m)</string>
+    <string name="saved_places_add">Save place</string>
+    <string name="saved_places_empty">No saved places yet. Add Home, Work, Gym, etc.</string>
     <string name="add_title_label">Title</string>
     <string name="add_pick_current">Use current location</string>
     <string name="add_pick_map">Pick on map</string>
