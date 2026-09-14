@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,6 +42,7 @@ fun HomeScreen(
     onEdit: (Long) -> Unit,
     onSettings: () -> Unit,
     onSavedPlaces: () -> Unit,
+    onLists: () -> Unit,
 ) {
     val context = LocalContext.current
     val appContext = context.applicationContext
@@ -53,6 +55,9 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.home_title)) },
                 actions = {
+                    IconButton(onClick = onLists) {
+                        Icon(Icons.Filled.List, contentDescription = stringResource(R.string.lists_title))
+                    }
                     IconButton(onClick = onSavedPlaces) {
                         Icon(Icons.Filled.LocationOn, contentDescription = stringResource(R.string.saved_places_title))
                     }

@@ -31,6 +31,8 @@ data class ReminderEntity(
     val nagMode: Boolean = false,
     /** nag interval in minutes */
     val nagIntervalMinutes: Int = 15,
+    /** ID of the list this reminder belongs to, null = no list */
+    val listId: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val enabled: Boolean = true,
     /** last fired epoch millis (cooldown) */
