@@ -14,6 +14,12 @@ interface ReminderDao {
     @Query("SELECT * FROM reminders ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<ReminderEntity>>
 
+    @Query("SELECT * FROM reminders WHERE listId = :listId ORDER BY createdAt DESC")
+    fun observeByList(listId: Long): Flow<List<ReminderEntity>>
+
+    @Query("SELECT * FROM reminders WHERE listId IS NULL ORDER BY createdAt DESC")
+    fun observeUnassigned(): Flow<List<ReminderEntity>>
+
     @Query("SELECT * FROM reminders WHERE enabled = 1 ORDER BY createdAt DESC")
     fun observeEnabled(): Flow<List<ReminderEntity>>
 

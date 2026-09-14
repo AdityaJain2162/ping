@@ -30,6 +30,12 @@
     <string name="saved_places_radius">Radius (m)</string>
     <string name="saved_places_add">Save place</string>
     <string name="saved_places_empty">No saved places yet. Add Home, Work, Gym, etc.</string>
+
+    <!-- Lists -->
+    <string name="lists_title">Lists</string>
+    <string name="lists_name">List name</string>
+    <string name="lists_add">Create list</string>
+    <string name="lists_empty">No lists yet. Create one to organize your reminders.</string>
     <string name="add_title_label">Title</string>
     <string name="add_pick_current">Use current location</string>
     <string name="add_pick_map">Pick on map</string>
