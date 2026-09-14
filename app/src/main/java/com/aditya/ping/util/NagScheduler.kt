@@ -30,6 +30,7 @@ object NagScheduler {
 
         val intervalMillis = reminder.nagIntervalMinutes * 60_000L
         val triggerAt = System.currentTimeMillis() + intervalMillis
+        android.util.Log.d("NagScheduler", "Scheduling nag for reminder id=${reminder.id} interval=${reminder.nagIntervalMinutes}min fireAt=${java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(triggerAt))}")
 
         val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         // Inexact is fine for nagging — saves battery
