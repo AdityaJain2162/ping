@@ -72,7 +72,19 @@ class AlarmActivity : ComponentActivity() {
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Alarm"
         val note = intent.getStringExtra(EXTRA_NOTE).orEmpty()
 
-        startSound()
+        // Load reminder to get custom ringtone URI and quick action
+        val reminder = if (reminderId > 0) {
+            try { kotlinx.coroutines.runBlocking { PingDatabase.get(this@AlarmActivity).reminderDao().getById(reminderId) } }
+            catch (e: Exception) { null }
+        } else null
+
+        val customRingtoneUri = reminder?.ringtoneUri?.takeIf { it.isNotBlank() }
+        val quickActionType = reminder?.quickActionType ?: 0
+        val quickActionData = reminder?.quickActionData ?: ""
+        val quickActionLabel = com.aditya.ping.util.QuickActionExecutor.actionLabel(quickActionType)
+        val hasQuickAction = quickActionType != 0 && quickActionData.isNotBlank()
+
+        startSound(customRingtoneUri)
         startVibration()
         startVolumeEscalation()
 
@@ -80,6 +92,10 @@ class AlarmActivity : ComponentActivity() {
             AlarmScreen(
                 title = title,
                 note = note,
+                quickActionLabel = if (hasQuickAction) quickActionLabel else null,
+                onQuickAction = if (hasQuickAction) {
+                    { reminder?.let { com.aditya.ping.util.QuickActionExecutor.execute(this, it) } }
+                } else null,
                 onDismiss = {
                     stopAlarm()
                     finish()
@@ -98,10 +114,14 @@ class AlarmActivity : ComponentActivity() {
         }
     }
 
-    private fun startSound() {
+    private fun startSound(customUri: String? = null) {
         try {
-            val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+            val uri = if (!customUri.isNullOrBlank()) {
+                android.net.Uri.parse(customUri)
+            } else {
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+            }
             ringtone = RingtoneManager.getRingtone(this, uri)
             ringtone?.audioAttributes = android.media.AudioAttributes.Builder()
                 .setUsage(android.media.AudioAttributes.USAGE_ALARM)
@@ -196,6 +216,8 @@ private fun AlarmScreen(
     onDismiss: () -> Unit,
     onSnooze: () -> Unit,
     onSnoozeTo: (Long) -> Unit,
+    quickActionLabel: String? = null,
+    onQuickAction: (() -> Unit)? = null,
 ) {
     var showSnoozeOptions by remember { mutableStateOf(false) }
     val snoozeOptions = remember { SmartSnooze.options() }
@@ -242,6 +264,15 @@ private fun AlarmScreen(
             modifier = Modifier.fillMaxWidth().height(56.dp),
         ) {
             Text("Snooze", fontSize = 18.sp, color = Color.White)
+        }
+        if (quickActionLabel != null && onQuickAction != null) {
+            Spacer(Modifier.height(16.dp))
+            OutlinedButton(
+                onClick = onQuickAction,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+            ) {
+                Text(quickActionLabel, fontSize = 18.sp, color = MaterialTheme.colorScheme.tertiary)
+            }
         }
 
         if (showSnoozeOptions) {

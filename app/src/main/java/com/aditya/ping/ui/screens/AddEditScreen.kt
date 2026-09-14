@@ -20,7 +20,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -52,6 +54,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aditya.ping.R
 import com.aditya.ping.data.ReminderRepository
 import com.aditya.ping.util.AlarmScheduler
+import com.aditya.ping.util.GeoCoderUtil
 import com.aditya.ping.util.LocationUtil
 import com.aditya.ping.util.PermissionUtil
 import kotlinx.coroutines.Dispatchers
@@ -93,6 +96,17 @@ fun AddEditScreen(
 
     val dateFmt = remember { SimpleDateFormat("EEE, MMM d 'at' h:mm a", Locale.getDefault()) }
     var showLocationDisabledDialog by remember { mutableStateOf(false) }
+    var locationSearchQuery by remember { mutableStateOf("") }
+    var locationSearchResults by remember { mutableStateOf<List<com.aditya.ping.util.GeoResult>>(emptyList()) }
+    val geoCoder = remember { GeoCoderUtil(context) }
+
+    LaunchedEffect(locationSearchQuery) {
+        if (locationSearchQuery.length >= 3) {
+            locationSearchResults = geoCoder.search(locationSearchQuery)
+        } else {
+            locationSearchResults = emptyList()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -168,6 +182,31 @@ fun AddEditScreen(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    // Ringtone picker
+                    val ringtoneLauncher = rememberLauncherForActivityResult(
+                        ActivityResultContracts.StartActivityForResult(),
+                    ) { result ->
+                        val uri = result.data?.getParcelableExtra<android.net.Uri>(android.media.RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+                        if (uri != null) {
+                            vm.onRingtoneUriChange(uri.toString())
+                        }
+                    }
+                    OutlinedButton(onClick = {
+                        val intent = Intent(android.media.RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+                            putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_TYPE, android.media.RingtoneManager.TYPE_ALARM)
+                            putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_TITLE, "Select alarm tone")
+                            putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+                            putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+                            if (state.ringtoneUri.isNotBlank()) {
+                                putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, android.net.Uri.parse(state.ringtoneUri))
+                            }
+                        }
+                        ringtoneLauncher.launch(intent)
+                    }, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Filled.Alarm, contentDescription = null)
+                        Spacer(Modifier.size(8.dp))
+                        Text(if (state.ringtoneUri.isNotBlank()) stringResource(R.string.add_ringtone_custom) else stringResource(R.string.add_ringtone_pick))
+                    }
                 }
             }
 
@@ -241,6 +280,37 @@ fun AddEditScreen(
 
             // --- Location trigger section ---
             Text(stringResource(R.string.add_location_label), style = MaterialTheme.typography.labelLarge)
+
+            // Search any address
+            OutlinedTextField(
+                value = locationSearchQuery,
+                onValueChange = { locationSearchQuery = it },
+                label = { Text(stringResource(R.string.add_location_search)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (locationSearchResults.isNotEmpty()) {
+                locationSearchResults.forEach { result ->
+                    TextButton(
+                        onClick = {
+                            vm.onLocation(result.lat, result.lng, result.label)
+                            locationSearchQuery = ""
+                            locationSearchResults = emptyList()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.size(8.dp))
+                        Text(
+                            result.label,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 2,
+                        )
+                    }
+                }
+            }
+
+            // Use current location button
             OutlinedButton(onClick = {
                 val util = LocationUtil(context)
                 if (!util.isLocationEnabled()) {
@@ -295,12 +365,13 @@ fun AddEditScreen(
                 0 to stringResource(R.string.quick_action_none),
                 1 to stringResource(R.string.quick_action_call),
                 2 to stringResource(R.string.quick_action_whatsapp),
+                6 to stringResource(R.string.quick_action_sms),
                 3 to stringResource(R.string.quick_action_open_app),
                 4 to stringResource(R.string.quick_action_navigate),
                 5 to stringResource(R.string.quick_action_url),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                quickActions.take(3).forEach { (type, label) ->
+                quickActions.take(4).forEach { (type, label) ->
                     FilterChip(
                         selected = state.quickActionType == type,
                         onClick = { vm.onQuickActionTypeChange(type) },
@@ -309,7 +380,7 @@ fun AddEditScreen(
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                quickActions.drop(3).forEach { (type, label) ->
+                quickActions.drop(4).forEach { (type, label) ->
                     FilterChip(
                         selected = state.quickActionType == type,
                         onClick = { vm.onQuickActionTypeChange(type) },
@@ -326,6 +397,7 @@ fun AddEditScreen(
                             when (state.quickActionType) {
                                 1 -> stringResource(R.string.quick_action_call_hint)
                                 2 -> stringResource(R.string.quick_action_whatsapp_hint)
+                                6 -> stringResource(R.string.quick_action_sms_hint)
                                 3 -> stringResource(R.string.quick_action_app_hint)
                                 5 -> stringResource(R.string.quick_action_url_hint)
                                 else -> ""
@@ -335,6 +407,15 @@ fun AddEditScreen(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                // Message field for WhatsApp and SMS
+                if (state.quickActionType == 2 || state.quickActionType == 6) {
+                    OutlinedTextField(
+                        value = state.quickActionMessage,
+                        onValueChange = vm::onQuickActionMessageChange,
+                        label = { Text(stringResource(R.string.quick_action_message_hint)) },
+                        modifier = Modifier.fillMaxWidth().height(80.dp),
+                    )
+                }
             }
 
             // --- Combined trigger mode (only when both time and location are set) ---

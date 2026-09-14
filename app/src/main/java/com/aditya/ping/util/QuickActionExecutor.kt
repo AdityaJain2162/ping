@@ -7,7 +7,7 @@ import com.aditya.ping.data.ReminderEntity
 
 /**
  * Executes a quick action associated with a reminder.
- * Types: 0=none, 1=call, 2=whatsapp, 3=open app, 4=navigate, 5=url
+ * Types: 0=none, 1=call, 2=whatsapp, 3=open app, 4=navigate, 5=url, 6=sms
  */
 object QuickActionExecutor {
 
@@ -25,22 +25,42 @@ object QuickActionExecutor {
     }
 
     fun createIntent(reminder: ReminderEntity): Intent? {
+        val data = reminder.quickActionData
+        val message = reminder.quickActionMessage
         return when (reminder.quickActionType) {
             // Call
-            1 -> Intent(Intent.ACTION_DIAL, Uri.parse("tel:${reminder.quickActionData}"))
-            // WhatsApp message
-            2 -> Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/${reminder.quickActionData}"))
+            1 -> Intent(Intent.ACTION_DIAL, Uri.parse("tel:$data"))
+            // WhatsApp message (with optional pre-filled message)
+            2 -> {
+                val url = if (message.isNotBlank()) {
+                    "https://wa.me/$data?text=${Uri.encode(message)}"
+                } else {
+                    "https://wa.me/$data"
+                }
+                Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                    `package` = "com.whatsapp"
+                }
+            }
             // Open app
             3 -> Intent(Intent.ACTION_MAIN).apply {
                 addCategory(Intent.CATEGORY_LAUNCHER)
-                `package` = reminder.quickActionData
+                `package` = data
             }
             // Navigate to location
             4 -> Intent(Intent.ACTION_VIEW, Uri.parse(
                 "geo:${reminder.lat},${reminder.lng}?q=${reminder.lat},${reminder.lng}(${reminder.title})"
             ))
             // Open URL
-            5 -> Intent(Intent.ACTION_VIEW, Uri.parse(reminder.quickActionData))
+            5 -> Intent(Intent.ACTION_VIEW, Uri.parse(data))
+            // SMS (with optional pre-filled message)
+            6 -> {
+                val uri = if (message.isNotBlank()) {
+                    "smsto:$data?body=${Uri.encode(message)}"
+                } else {
+                    "smsto:$data"
+                }
+                Intent(Intent.ACTION_SENDTO, Uri.parse(uri))
+            }
             else -> null
         }
     }
@@ -51,6 +71,7 @@ object QuickActionExecutor {
         3 -> "Open app"
         4 -> "Navigate"
         5 -> "Open URL"
+        6 -> "SMS"
         else -> ""
     }
 }

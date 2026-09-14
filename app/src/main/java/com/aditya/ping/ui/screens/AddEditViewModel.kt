@@ -44,6 +44,10 @@ data class AddEditState(
     val quickActionType: Int = 0,
     /** quick action data: phone number, package name, URL */
     val quickActionData: String = "",
+    /** quick action message: WhatsApp/SMS message body */
+    val quickActionMessage: String = "",
+    /** custom ringtone URI for alarms, empty = default */
+    val ringtoneUri: String = "",
     val isEdit: Boolean = false,
     val saving: Boolean = false,
     val saved: Boolean = false,
@@ -72,6 +76,8 @@ class AddEditViewModel(
                     triggerMode = r.triggerMode,
                     quickActionType = r.quickActionType,
                     quickActionData = r.quickActionData,
+                    quickActionMessage = r.quickActionMessage,
+                    ringtoneUri = r.ringtoneUri,
                     isEdit = true,
                 )
             }
@@ -95,6 +101,8 @@ class AddEditViewModel(
     fun onTriggerModeChange(v: Int) = _state.update { it.copy(triggerMode = v) }
     fun onQuickActionTypeChange(v: Int) = _state.update { it.copy(quickActionType = v) }
     fun onQuickActionDataChange(v: String) = _state.update { it.copy(quickActionData = v) }
+    fun onQuickActionMessageChange(v: String) = _state.update { it.copy(quickActionMessage = v) }
+    fun onRingtoneUriChange(v: String) = _state.update { it.copy(ringtoneUri = v) }
 
     fun save() = viewModelScope.launch {
         val s = _state.value
@@ -125,6 +133,8 @@ class AddEditViewModel(
             triggerMode = if (hasLocation && hasTime) s.triggerMode else 0,
             quickActionType = s.quickActionType,
             quickActionData = s.quickActionData.trim(),
+            quickActionMessage = s.quickActionMessage.trim(),
+            ringtoneUri = s.ringtoneUri,
         )
         val id = if (s.isEdit) {
             repo.update(entity)
