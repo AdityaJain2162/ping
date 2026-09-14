@@ -13,6 +13,7 @@ import com.aditya.ping.util.AlarmScheduler
 import com.aditya.ping.util.NagScheduler
 import com.aditya.ping.util.NotificationChannels
 import com.aditya.ping.util.QuietHoursManager
+import com.aditya.ping.util.QuickActionExecutor
 import com.aditya.ping.util.RecurrenceCalculator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -49,14 +50,15 @@ class AlarmReceiver : BroadcastReceiver() {
             }
 
             // Fire immediately (alarm or non-quiet-hours)
-            if (isAlarmReminder) {
-                launchAlarmActivity(context, id, title, note)
-            } else {
-                showNotification(context, id.toInt(), title, note)
-            }
-
             val dao = PingDatabase.get(context).reminderDao()
             val reminder = dao.getById(id)
+
+            if (isAlarmReminder) {
+                launchAlarmActivity(context, id, title, note)
+            } else if (reminder != null) {
+                showNotification(context, id.toInt(), title, note, reminder)
+            }
+
             if (reminder != null) {
                 dao.markFired(id, System.currentTimeMillis())
 
@@ -84,7 +86,13 @@ class AlarmReceiver : BroadcastReceiver() {
         context.startActivity(intent)
     }
 
-    private fun showNotification(context: Context, notifId: Int, title: String, note: String) {
+    private fun showNotification(
+        context: Context,
+        notifId: Int,
+        title: String,
+        note: String,
+        reminder: com.aditya.ping.data.ReminderEntity,
+    ) {
         val doneIntent = Intent(context, NotificationActionReceiver::class.java).apply {
             putExtra(NotificationActionReceiver.EXTRA_REMINDER_ID, notifId.toLong())
             putExtra(NotificationActionReceiver.EXTRA_ACTION, NotificationActionReceiver.ACTION_DONE)
@@ -111,6 +119,23 @@ class AlarmReceiver : BroadcastReceiver() {
             .addAction(0, context.getString(R.string.notif_action_done), donePi)
             .addAction(0, context.getString(R.string.notif_action_snooze), snoozePi)
             .addAction(0, context.getString(R.string.notif_action_defer), deferPi)
+
+        // Quick action button (if set)
+        if (reminder.quickActionType != 0 && reminder.quickActionData.isNotBlank()) {
+            val quickIntent = QuickActionExecutor.createIntent(reminder)
+            if (quickIntent != null) {
+                quickIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                val quickPi = PendingIntent.getActivity(
+                    context, notifId + 30000, quickIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+                builder.addAction(
+                    0,
+                    QuickActionExecutor.actionLabel(reminder.quickActionType),
+                    quickPi,
+                )
+            }
+        }
 
         if (note.isNotBlank()) builder.setContentText(note)
 

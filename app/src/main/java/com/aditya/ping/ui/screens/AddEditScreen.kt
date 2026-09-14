@@ -289,6 +289,54 @@ fun AddEditScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            // --- Quick action section ---
+            Text(stringResource(R.string.add_quick_action), style = MaterialTheme.typography.labelLarge)
+            val quickActions = listOf(
+                0 to stringResource(R.string.quick_action_none),
+                1 to stringResource(R.string.quick_action_call),
+                2 to stringResource(R.string.quick_action_whatsapp),
+                3 to stringResource(R.string.quick_action_open_app),
+                4 to stringResource(R.string.quick_action_navigate),
+                5 to stringResource(R.string.quick_action_url),
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                quickActions.take(3).forEach { (type, label) ->
+                    FilterChip(
+                        selected = state.quickActionType == type,
+                        onClick = { vm.onQuickActionTypeChange(type) },
+                        label = { Text(label) },
+                    )
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                quickActions.drop(3).forEach { (type, label) ->
+                    FilterChip(
+                        selected = state.quickActionType == type,
+                        onClick = { vm.onQuickActionTypeChange(type) },
+                        label = { Text(label) },
+                    )
+                }
+            }
+            if (state.quickActionType != 0 && state.quickActionType != 4) {
+                OutlinedTextField(
+                    value = state.quickActionData,
+                    onValueChange = vm::onQuickActionDataChange,
+                    label = {
+                        Text(
+                            when (state.quickActionType) {
+                                1 -> stringResource(R.string.quick_action_call_hint)
+                                2 -> stringResource(R.string.quick_action_whatsapp_hint)
+                                3 -> stringResource(R.string.quick_action_app_hint)
+                                5 -> stringResource(R.string.quick_action_url_hint)
+                                else -> ""
+                            },
+                        )
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
             // --- Combined trigger mode (only when both time and location are set) ---
             val hasLocation = state.lat != 0.0 || state.lng != 0.0
             val hasTime = state.dueAt != null

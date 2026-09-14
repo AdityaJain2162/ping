@@ -35,6 +35,10 @@ data class ReminderEntity(
     val listId: Long? = null,
     /** combined trigger mode: 0=OR (fire on either time or location), 1=AND (both required) */
     val triggerMode: Int = 0,
+    /** quick action type: 0=none, 1=call, 2=whatsapp, 3=open app, 4=navigate, 5=url */
+    val quickActionType: Int = 0,
+    /** quick action data: phone number, package name, URL, or label */
+    val quickActionData: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val enabled: Boolean = true,
     /** last fired epoch millis (cooldown) */

@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [ReminderEntity::class, SavedPlaceEntity::class, ReminderListEntity::class],
-    version = 8,
+    version = 9,
     exportSchema = false,
 )
 abstract class PingDatabase : RoomDatabase() {

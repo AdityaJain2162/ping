@@ -129,7 +129,7 @@ class GeofenceService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
-        val notif = NotificationCompat.Builder(this, NotificationChannels.GEOFENCE)
+        val builder = NotificationCompat.Builder(this, NotificationChannels.GEOFENCE)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(text)
@@ -137,10 +137,26 @@ class GeofenceService : Service() {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pi)
-            .build()
+
+        // Quick action button (if set)
+        if (r.quickActionType != 0 && r.quickActionData.isNotBlank()) {
+            val quickIntent = com.aditya.ping.util.QuickActionExecutor.createIntent(r)
+            if (quickIntent != null) {
+                quickIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                val quickPi = PendingIntent.getActivity(
+                    this, r.id.toInt() + 30000, quickIntent,
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                )
+                builder.addAction(
+                    0,
+                    com.aditya.ping.util.QuickActionExecutor.actionLabel(r.quickActionType),
+                    quickPi,
+                )
+            }
+        }
 
         val manager = getSystemService(NotificationManager::class.java) ?: return
-        manager.notify(r.id.toInt(), notif)
+        manager.notify(r.id.toInt(), builder.build())
     }
 
     private fun buildServiceNotification(reminderCount: Int): Notification {
