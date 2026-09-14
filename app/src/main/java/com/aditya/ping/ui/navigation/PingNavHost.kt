@@ -1,5 +1,11 @@
 package com.aditya.ping.ui.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -143,7 +149,21 @@ fun PingNavHost() {
                 .padding(inner)
                 .then(swipeModifier),
         ) {
-            composable(Routes.HOME) {
+            val tabDuration = 300
+            fun tabEnter(direction: AnimatedContentTransitionScope.SlideDirection) =
+                slideInHorizontally(tween(tabDuration)) { full ->
+                    if (direction == AnimatedContentTransitionScope.SlideDirection.Left) full else -full
+                } + fadeIn(tween(tabDuration))
+            fun tabExit(direction: AnimatedContentTransitionScope.SlideDirection) =
+                slideOutHorizontally(tween(tabDuration)) { full ->
+                    if (direction == AnimatedContentTransitionScope.SlideDirection.Left) -full else full
+                } + fadeOut(tween(tabDuration))
+
+            composable(
+                Routes.HOME,
+                enterTransition = { tabEnter(AnimatedContentTransitionScope.SlideDirection.Left) },
+                exitTransition = { tabExit(AnimatedContentTransitionScope.SlideDirection.Left) },
+            ) {
                 HomeScreen(
                     onAdd = { nav.navigate(Routes.ADD) },
                     onEdit = { id -> nav.navigate(Routes.edit(id)) },
@@ -153,6 +173,33 @@ fun PingNavHost() {
                     onCalendar = { nav.navigate(Routes.CALENDAR) },
                     onHistory = { nav.navigate(Routes.HISTORY) },
                 )
+            }
+            composable(
+                Routes.SAVED_PLACES,
+                enterTransition = { tabEnter(AnimatedContentTransitionScope.SlideDirection.Left) },
+                exitTransition = { tabExit(AnimatedContentTransitionScope.SlideDirection.Left) },
+            ) {
+                SavedPlacesScreen(onBack = { nav.popBackStack() })
+            }
+            composable(Routes.LISTS) {
+                ListsScreen(onBack = { nav.popBackStack() })
+            }
+            composable(
+                Routes.CALENDAR,
+                enterTransition = { tabEnter(AnimatedContentTransitionScope.SlideDirection.Left) },
+                exitTransition = { tabExit(AnimatedContentTransitionScope.SlideDirection.Left) },
+            ) {
+                CalendarScreen(
+                    onBack = { nav.popBackStack() },
+                    onEdit = { id -> nav.navigate(Routes.edit(id)) },
+                )
+            }
+            composable(
+                Routes.AUTOMATIONS,
+                enterTransition = { tabEnter(AnimatedContentTransitionScope.SlideDirection.Left) },
+                exitTransition = { tabExit(AnimatedContentTransitionScope.SlideDirection.Left) },
+            ) {
+                AutomationsScreen()
             }
             composable(Routes.ADD) {
                 AddEditScreen(
@@ -174,21 +221,6 @@ fun PingNavHost() {
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(onBack = { nav.popBackStack() })
-            }
-            composable(Routes.SAVED_PLACES) {
-                SavedPlacesScreen(onBack = { nav.popBackStack() })
-            }
-            composable(Routes.LISTS) {
-                ListsScreen(onBack = { nav.popBackStack() })
-            }
-            composable(Routes.CALENDAR) {
-                CalendarScreen(
-                    onBack = { nav.popBackStack() },
-                    onEdit = { id -> nav.navigate(Routes.edit(id)) },
-                )
-            }
-            composable(Routes.AUTOMATIONS) {
-                AutomationsScreen()
             }
             composable(Routes.HISTORY) {
                 HistoryScreen(onBack = { nav.popBackStack() })
