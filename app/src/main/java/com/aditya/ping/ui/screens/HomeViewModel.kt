@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.aditya.ping.data.ReminderEntity
 import com.aditya.ping.data.ReminderRepository
 import com.aditya.ping.util.AlarmScheduler
+import com.aditya.ping.util.NagScheduler
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -27,11 +28,13 @@ class HomeViewModel(
             AlarmScheduler.schedule(appContext, reminder)
         } else {
             AlarmScheduler.cancel(appContext, id)
+            NagScheduler.cancel(appContext, id)
         }
     }
 
     fun delete(id: Long) = viewModelScope.launch {
         AlarmScheduler.cancel(appContext, id)
+        NagScheduler.cancel(appContext, id)
         repo.deleteById(id)
     }
 

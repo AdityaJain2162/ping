@@ -72,6 +72,10 @@
             android:name=".service.AlarmReceiver"
             android:exported="false" />
 
+        <receiver
+            android:name=".service.NagReceiver"
+            android:exported="false" />
+
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
