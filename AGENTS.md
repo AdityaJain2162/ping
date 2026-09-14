@@ -8,12 +8,35 @@
 
 ## 1. Project Overview
 
-**GeoNote** is a privacy-first, ad-supported Android app for location-based
-reminders. Users pin a place on the map (or use their current location), write
-a note, and get a notification when they arrive at (or leave) that place.
+**GeoNote** is a privacy-first Android app for location-based reminders. Users
+pin a place on the map (or use their current location), write a note, and get a
+notification when they arrive at (or leave) that place.
 
 Built natively in **Kotlin + Jetpack Compose + Material 3**, with an optional
 **AMOLED dark theme** for OLED screens.
+
+### Package
+
+`com.aditya.geonote` — `com.aditya` is the reusable brand prefix for all apps
+by Aditya Jain. The app name is appended (e.g. `com.aditya.geonote`,
+`com.aditya.nextapp`).
+
+### Product Flavors
+
+GeoNote ships in two flavors via the `distribution` flavor dimension:
+
+| Flavor | App ID | Ads | Purpose |
+|--------|--------|-----|---------|
+| `community` | `com.aditya.geonote.community` | No | Ad-free, sideloadable, open build |
+| `playstore` | `com.aditya.geonote` | Yes (AdMob) | Play Store release with banner ads |
+
+- Ad code (`BannerAd`, `AdConfig`, `AdInitializer`) lives in **flavor source
+  sets**, not `main`. The community flavor provides no-op stubs; the playstore
+  flavor provides real AdMob implementations.
+- `play-services-ads` dependency is `playstoreImplementation` only — the
+  community APK contains zero ad SDK code.
+- AdMob meta-data + `INTERNET`/`ACCESS_NETWORK_STATE` permissions are in
+  `src/playstore/AndroidManifest.xml` only.
 
 ### Why this app exists
 Google removed location-based reminders from Keep in H2 2025. Existing
@@ -190,11 +213,18 @@ Git identity is pre-configured in `.git/config`. Do not change it.
 ## 6. Command Cheat Sheet
 
 ```bash
-# Build debug APK (must pass before any commit)
+# Build community debug APK (ad-free)
+./gradlew assembleCommunityDebug
+
+# Build playstore debug APK (with ads)
+./gradlew assemblePlaystoreDebug
+
+# Build both flavors
 ./gradlew assembleDebug
 
-# Install on connected device/emulator
-./gradlew installDebug
+# Install on connected device/emulator (specify flavor)
+./gradlew installCommunityDebug
+./gradlew installPlaystoreDebug
 
 # Run unit tests
 ./gradlew test
@@ -202,11 +232,11 @@ Git identity is pre-configured in `.git/config`. Do not change it.
 # Run instrumented tests (needs emulator/device)
 ./gradlew connectedAndroidTests
 
-# Build release AAB (Play Store)
-./gradlew bundleRelease
+# Build release AAB (Play Store — playstore flavor only)
+./gradlew bundlePlaystoreRelease
 
 # Lint check
-./gradlew lint
+./gradlew lintCommunityDebug
 
 # Clean build
 ./gradlew clean
