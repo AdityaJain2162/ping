@@ -16,14 +16,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Login
-import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.LocationOff
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.WarningAmber
@@ -42,7 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -52,9 +50,8 @@ import androidx.compose.ui.unit.dp
 import com.aditya.ping.R
 import com.aditya.ping.data.ReminderEntity
 import com.aditya.ping.util.HapticUtil
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.aditya.ping.util.UiFormats
+import com.aditya.ping.ui.theme.TimestampStyle
 
 @Composable
 fun ReminderCard(
@@ -66,9 +63,6 @@ fun ReminderCard(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val timeFmt = remember(reminder.dueAt) {
-        SimpleDateFormat("EEE, MMM d 'at' h:mm a", Locale.getDefault())
-    }
     val isOverdue = reminder.enabled && !reminder.completed && reminder.dueAt != null && reminder.dueAt < System.currentTimeMillis()
     val isDone = reminder.completed
 
@@ -119,7 +113,7 @@ fun ReminderCard(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(MaterialTheme.shapes.large)
                     .background(bgColor)
                     .padding(horizontal = 24.dp),
                 contentAlignment = if (direction == SwipeToDismissBoxValue.StartToEnd)
@@ -150,7 +144,7 @@ fun ReminderCard(
                 onClick()
             },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
+            shape = MaterialTheme.shapes.large,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainer,
             ),
@@ -162,22 +156,18 @@ fun ReminderCard(
                     .padding(start = 0.dp, end = 8.dp, top = 14.dp, bottom = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Gradient accent bar
+                // Accent bar
                 Box(
                     modifier = Modifier
-                        .width(6.dp)
+                        .width(4.dp)
                         .height(56.dp)
-                        .clip(RoundedCornerShape(topEnd = 6.dp, bottomEnd = 6.dp))
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(accentColor, accentColor.copy(alpha = 0.6f)),
-                            ),
-                        ),
+                        .clip(MaterialTheme.shapes.extraSmall)
+                        .background(accentColor),
                 )
 
                 Row(
                     modifier = Modifier
-                        .padding(start = 14.dp, end = 4.dp)
+                        .padding(start = 12.dp, end = 4.dp)
                         .weight(1f),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -185,23 +175,16 @@ fun ReminderCard(
                     Box(
                         modifier = Modifier
                             .size(44.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(
-                                        accentColor.copy(alpha = 0.18f),
-                                        accentColor.copy(alpha = 0.08f),
-                                    ),
-                                ),
-                            ),
+                            .clip(MaterialTheme.shapes.small)
+                            .background(accentColor.copy(alpha = 0.12f)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             imageVector = when {
                                 isDone -> Icons.Filled.CheckCircle
                                 reminder.isAlarm -> Icons.Filled.Alarm
-                                reminder.triggerType == 0 -> Icons.AutoMirrored.Outlined.Login
-                                else -> Icons.AutoMirrored.Outlined.Logout
+                                reminder.triggerType == 0 -> Icons.Filled.LocationOn
+                                else -> Icons.Filled.LocationOff
                             },
                             contentDescription = null,
                             tint = accentColor,
@@ -226,7 +209,7 @@ fun ReminderCard(
                                 Spacer(Modifier.width(8.dp))
                                 Box(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
+                                        .clip(MaterialTheme.shapes.extraSmall)
                                         .background(MaterialTheme.colorScheme.error.copy(alpha = 0.12f))
                                         .padding(horizontal = 8.dp, vertical = 3.dp),
                                 ) {
@@ -275,8 +258,8 @@ fun ReminderCard(
                                 )
                                 Spacer(Modifier.width(5.dp))
                                 Text(
-                                    text = timeFmt.format(Date(due)),
-                                    style = MaterialTheme.typography.bodySmall,
+                                    text = UiFormats.formatReminderDate(due),
+                                    style = TimestampStyle,
                                     color = if (isOverdue) MaterialTheme.colorScheme.error
                                     else MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
@@ -302,7 +285,7 @@ fun ReminderCard(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(MaterialTheme.shapes.small)
                         .background(
                             if (isDone) MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)
                             else Color.Transparent,
@@ -316,7 +299,7 @@ fun ReminderCard(
                     Icon(
                         imageVector = if (isDone) Icons.Filled.CheckCircle
                         else Icons.Filled.Check,
-                        contentDescription = "Mark done",
+                        contentDescription = stringResource(R.string.card_mark_done),
                         tint = if (isDone) MaterialTheme.colorScheme.secondary
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(24.dp),

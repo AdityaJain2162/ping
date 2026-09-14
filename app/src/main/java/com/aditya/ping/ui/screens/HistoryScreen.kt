@@ -37,9 +37,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aditya.ping.R
 import com.aditya.ping.data.PingDatabase
 import com.aditya.ping.data.ReminderRepository
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.aditya.ping.util.UiFormats
+import com.aditya.ping.ui.theme.TimestampStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,9 +86,6 @@ fun HistoryScreen(onBack: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(history, key = { it.id }) { reminder ->
-                    val dateFmt = remember(reminder.completedAt) {
-                        SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault())
-                    }
                     val completedAt = reminder.completedAt ?: reminder.createdAt
                     Column(
                         modifier = Modifier
@@ -123,8 +119,8 @@ fun HistoryScreen(onBack: () -> Unit) {
                             )
                         }
                         Text(
-                            text = "Completed ${dateFmt.format(Date(completedAt))}",
-                            style = MaterialTheme.typography.bodySmall,
+                            text = "Completed ${UiFormats.formatHistoryDate(completedAt)}",
+                            style = TimestampStyle,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 28.dp, top = 2.dp),
                         )

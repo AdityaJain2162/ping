@@ -31,7 +31,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Call
@@ -56,12 +55,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.aditya.ping.R
 import com.aditya.ping.data.PingDatabase
 import com.aditya.ping.util.AlarmScheduler
 import com.aditya.ping.util.NagScheduler
@@ -106,7 +106,7 @@ class AlarmActivity : ComponentActivity() {
         }
 
         val reminderId = intent.getLongExtra(EXTRA_REMINDER_ID, -1L)
-        val title = intent.getStringExtra(EXTRA_TITLE) ?: "Alarm"
+        val title = intent.getStringExtra(EXTRA_TITLE) ?: getString(R.string.alarm_default_title)
         val note = intent.getStringExtra(EXTRA_NOTE).orEmpty()
 
         val reminder = if (reminderId > 0) {
@@ -298,15 +298,7 @@ private fun AlarmScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color(0xFF1A0A0A),
-                        Color(0xFF2D1010),
-                        Color(0xFF1A0A0A),
-                    ),
-                ),
-            ),
+            .background(MaterialTheme.colorScheme.surfaceContainerLowest),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -324,26 +316,22 @@ private fun AlarmScreen(
                     modifier = Modifier
                         .size(96.dp)
                         .scale(pulseScale)
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(
-                            Brush.radialGradient(
-                                listOf(Color(0xFFE85D5D), Color(0xFFE85D5D).copy(alpha = 0.3f)),
-                            ),
-                        ),
+                        .clip(MaterialTheme.shapes.extraLarge)
+                        .background(MaterialTheme.colorScheme.errorContainer),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Alarm,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
                         modifier = Modifier.size(52.dp),
                     )
                 }
                 Spacer(Modifier.height(12.dp))
                 Text(
                     text = currentTime,
-                    color = Color.White.copy(alpha = 0.6f),
-                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Light,
                 )
             }
@@ -354,16 +342,16 @@ private fun AlarmScreen(
             ) {
                 Text(
                     text = title,
-                    color = Color.White,
-                    fontSize = 36.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
                 )
                 if (note.isNotBlank()) {
                     Spacer(Modifier.height(12.dp))
                     Text(
                         text = note,
-                        color = Color.White.copy(alpha = 0.7f),
-                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyLarge,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     )
                 }
@@ -374,22 +362,22 @@ private fun AlarmScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                // Quick action button (prominent, gradient)
+                // Quick action button
                 if (quickActionLabel != null && onQuickAction != null && quickActionIcon != null) {
                     Button(
                         onClick = onQuickAction,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(64.dp),
-                        shape = RoundedCornerShape(20.dp),
+                            .height(56.dp),
+                        shape = MaterialTheme.shapes.large,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF25D366), // WhatsApp green
+                            containerColor = Color(0xFF25D366), // WhatsApp brand green
                             contentColor = Color.White,
                         ),
                     ) {
                         Icon(quickActionIcon, contentDescription = null, modifier = Modifier.size(24.dp))
-                        Spacer(Modifier.width(10.dp))
-                        Text(quickActionLabel, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.width(8.dp))
+                        Text(quickActionLabel, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     }
                     Spacer(Modifier.height(12.dp))
                 }
@@ -399,14 +387,14 @@ private fun AlarmScreen(
                     onClick = onDismiss,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(60.dp),
-                    shape = RoundedCornerShape(20.dp),
+                        .height(56.dp),
+                    shape = MaterialTheme.shapes.large,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFE85D5D),
-                        contentColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
                     ),
                 ) {
-                    Text("Dismiss", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.alarm_dismiss), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 }
 
                 Spacer(Modifier.height(12.dp))
@@ -417,9 +405,9 @@ private fun AlarmScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = MaterialTheme.shapes.large,
                 ) {
-                    Text("Snooze", fontSize = 16.sp, color = Color.White.copy(alpha = 0.9f))
+                    Text(stringResource(R.string.alarm_snooze), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
                 }
             }
         }
@@ -428,7 +416,7 @@ private fun AlarmScreen(
         if (showSnoozeOptions) {
             AlertDialog(
                 onDismissRequest = { showSnoozeOptions = false },
-                title = { Text("Snooze for…") },
+                title = { Text(stringResource(R.string.alarm_snooze_for)) },
                 text = {
                     Column {
                         snoozeOptions.forEach { option ->
@@ -446,7 +434,7 @@ private fun AlarmScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = { showSnoozeOptions = false }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.alarm_cancel))
                     }
                 },
             )

@@ -57,13 +57,11 @@ import com.aditya.ping.util.AlarmScheduler
 import com.aditya.ping.util.GeoCoderUtil
 import com.aditya.ping.util.LocationUtil
 import com.aditya.ping.util.PermissionUtil
+import com.aditya.ping.util.UiFormats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,7 +92,6 @@ fun AddEditScreen(
         }
     }
 
-    val dateFmt = remember { SimpleDateFormat("EEE, MMM d 'at' h:mm a", Locale.getDefault()) }
     var showLocationDisabledDialog by remember { mutableStateOf(false) }
     var locationSearchQuery by remember { mutableStateOf("") }
     var locationSearchResults by remember { mutableStateOf<List<com.aditya.ping.util.GeoResult>>(emptyList()) }
@@ -146,7 +143,7 @@ fun AddEditScreen(
                 Spacer(Modifier.size(8.dp))
                 if (state.dueAt != null) {
                     Text(
-                        dateFmt.format(Date(state.dueAt!!)),
+                        UiFormats.formatReminderDate(state.dueAt!!),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f),
                     )

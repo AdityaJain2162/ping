@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
@@ -50,7 +49,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -67,9 +65,6 @@ import com.aditya.ping.data.ReminderRepository
 import com.aditya.ping.ui.components.BannerAd
 import com.aditya.ping.ui.components.CelebrationOverlay
 import com.aditya.ping.ui.components.ReminderCard
-import com.aditya.ping.ui.theme.PrimaryGradientEnd
-import com.aditya.ping.ui.theme.PrimaryGradientStart
-import com.aditya.ping.util.FactService
 
 @Composable
 fun HomeScreen(
@@ -93,12 +88,6 @@ fun HomeScreen(
 
     // Celebration overlay state
     var showCelebration by remember { mutableStateOf(false) }
-
-    // Fact of the day
-    var factOfDay by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(Unit) {
-        factOfDay = FactService.getTodayFact(context)
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -133,14 +122,14 @@ fun HomeScreen(
                 placeholder = { Text(stringResource(R.string.home_search)) },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 singleLine = true,
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.large,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             )
 
             if (reminders.isEmpty() && !isSearching) {
-                EmptyState(onAdd = onAdd, factOfDay = factOfDay)
+                EmptyState(onAdd = onAdd)
             } else if (isSearching) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -213,12 +202,8 @@ private fun HeroStatsHeader(stats: HomeStats) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clip(RoundedCornerShape(24.dp))
-            .background(
-                Brush.linearGradient(
-                    listOf(PrimaryGradientStart, PrimaryGradientEnd),
-                ),
-            )
+            .clip(MaterialTheme.shapes.extraLarge)
+            .background(MaterialTheme.colorScheme.primaryContainer)
             .padding(horizontal = 20.dp, vertical = 20.dp),
     ) {
         Row(
@@ -226,7 +211,8 @@ private fun HeroStatsHeader(stats: HomeStats) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Progress ring (Zeigarnik effect)
+            // Progress ring
+            val ringColor = MaterialTheme.colorScheme.onPrimaryContainer
             Box(
                 modifier = Modifier.size(64.dp),
                 contentAlignment = Alignment.Center,
@@ -235,9 +221,8 @@ private fun HeroStatsHeader(stats: HomeStats) {
                     val strokeWidth = 6.dp.toPx()
                     val arcSize = Size(size.width - strokeWidth, size.height - strokeWidth)
                     val arcOffset = Offset(strokeWidth / 2, strokeWidth / 2)
-                    // Background ring
                     drawArc(
-                        color = Color.White.copy(alpha = 0.2f),
+                        color = ringColor.copy(alpha = 0.25f),
                         startAngle = -90f,
                         sweepAngle = 360f,
                         useCenter = false,
@@ -245,9 +230,8 @@ private fun HeroStatsHeader(stats: HomeStats) {
                         size = arcSize,
                         style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
                     )
-                    // Progress ring
                     drawArc(
-                        color = Color.White,
+                        color = ringColor,
                         startAngle = -90f,
                         sweepAngle = 360f * animatedProgress,
                         useCenter = false,
@@ -306,7 +290,7 @@ private fun StatItem(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color.White,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier.size(22.dp),
         )
         Spacer(Modifier.height(6.dp))
@@ -314,12 +298,12 @@ private fun StatItem(
             text = count.toString(),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.85f),
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
         )
     }
 }
@@ -330,7 +314,7 @@ private fun VerticalDivider() {
         modifier = Modifier
             .width(1.dp)
             .height(40.dp)
-            .background(Color.White.copy(alpha = 0.2f)),
+            .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f)),
     )
 }
 
@@ -354,7 +338,7 @@ private fun SectionHeader(section: ReminderSection) {
         Spacer(Modifier.width(8.dp))
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(10.dp))
+                .clip(MaterialTheme.shapes.small)
                 .background(
                     if (section.isOverdue) MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
                     else MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -373,7 +357,7 @@ private fun SectionHeader(section: ReminderSection) {
 }
 
 @Composable
-private fun EmptyState(onAdd: () -> Unit, factOfDay: String?) {
+private fun EmptyState(onAdd: () -> Unit) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
@@ -386,12 +370,8 @@ private fun EmptyState(onAdd: () -> Unit, factOfDay: String?) {
             Box(
                 modifier = Modifier
                     .size(112.dp)
-                    .clip(RoundedCornerShape(32.dp))
-                    .background(
-                        Brush.linearGradient(
-                            listOf(PrimaryGradientStart.copy(alpha = 0.15f), PrimaryGradientEnd.copy(alpha = 0.1f)),
-                        ),
-                    ),
+                    .clip(MaterialTheme.shapes.extraLarge)
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -415,7 +395,7 @@ private fun EmptyState(onAdd: () -> Unit, factOfDay: String?) {
             )
             Button(
                 onClick = onAdd,
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.large,
                 colors = ButtonDefaults.buttonColors(),
                 modifier = Modifier.padding(top = 8.dp),
             ) {
@@ -423,38 +403,6 @@ private fun EmptyState(onAdd: () -> Unit, factOfDay: String?) {
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.home_empty_cta))
             }
-
-            // Fact of the day
-            if (factOfDay != null) {
-                Spacer(Modifier.height(24.dp))
-                FactCard(fact = factOfDay)
-            }
         }
-    }
-}
-
-@Composable
-private fun FactCard(fact: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = "Did you know?",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = fact,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-        )
     }
 }

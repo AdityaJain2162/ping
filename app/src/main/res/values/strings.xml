@@ -189,4 +189,10 @@
     <string name="history_title">History</string>
     <string name="history_empty">No completed reminders yet</string>
     <string name="home_view_history">View History (%1$d)</string>
+    <string name="card_mark_done">Mark done</string>
+    <string name="alarm_default_title">Alarm</string>
+    <string name="alarm_dismiss">Dismiss</string>
+    <string name="alarm_snooze">Snooze</string>
+    <string name="alarm_snooze_for">Snooze for…</string>
+    <string name="alarm_cancel">Cancel</string>
 </resources>
