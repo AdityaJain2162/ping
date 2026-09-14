@@ -26,6 +26,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import com.aditya.ping.data.PingDatabase
 import com.aditya.ping.data.ReminderEntity
 import com.aditya.ping.util.AlarmScheduler
+import com.aditya.ping.util.SmartSnooze
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -84,6 +86,11 @@ class AlarmActivity : ComponentActivity() {
                 },
                 onSnooze = {
                     snooze(reminderId, title, note)
+                    stopAlarm()
+                    finish()
+                },
+                onSnoozeTo = { snoozeTo ->
+                    snoozeTo(reminderId, snoozeTo)
                     stopAlarm()
                     finish()
                 },
@@ -149,6 +156,15 @@ class AlarmActivity : ComponentActivity() {
         }
     }
 
+    private fun snoozeTo(reminderId: Long, newDueAt: Long) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val dao = PingDatabase.get(this@AlarmActivity).reminderDao()
+            val reminder = dao.getById(reminderId) ?: return@launch
+            dao.update(reminder.copy(dueAt = newDueAt))
+            AlarmScheduler.schedule(this@AlarmActivity, reminder.copy(dueAt = newDueAt))
+        }
+    }
+
     private fun stopAlarm() {
         handler.removeCallbacksAndMessages(null)
         ringtone?.stop()
@@ -179,7 +195,11 @@ private fun AlarmScreen(
     note: String,
     onDismiss: () -> Unit,
     onSnooze: () -> Unit,
+    onSnoozeTo: (Long) -> Unit,
 ) {
+    var showSnoozeOptions by remember { mutableStateOf(false) }
+    val snoozeOptions = remember { SmartSnooze.options() }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -218,10 +238,37 @@ private fun AlarmScreen(
         }
         Spacer(Modifier.height(16.dp))
         OutlinedButton(
-            onClick = onSnooze,
+            onClick = { showSnoozeOptions = true },
             modifier = Modifier.fillMaxWidth().height(56.dp),
         ) {
             Text("Snooze", fontSize = 18.sp, color = Color.White)
+        }
+
+        if (showSnoozeOptions) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showSnoozeOptions = false },
+                title = { Text("Snooze for…") },
+                text = {
+                    Column {
+                        snoozeOptions.forEach { option ->
+                            TextButton(
+                                onClick = {
+                                    showSnoozeOptions = false
+                                    onSnoozeTo(option.calculate())
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(option.label, color = MaterialTheme.colorScheme.onSurface)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showSnoozeOptions = false }) {
+                        Text("Cancel")
+                    }
+                },
+            )
         }
     }
 }
