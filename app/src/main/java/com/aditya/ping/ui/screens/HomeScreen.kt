@@ -135,12 +135,10 @@ fun HomeScreen(
                     items(reminders, key = { it.id }) { r ->
                         ReminderCard(
                             reminder = r,
-                            onToggle = { enabled ->
-                                vm.toggleEnabled(r.id, enabled)
-                                if (!enabled) {
-                                    // Just completed — celebrate!
-                                    showCelebration = true
-                                }
+                            onToggleEnabled = { enabled -> vm.toggleEnabled(r.id, enabled) },
+                            onToggleCompleted = { completed ->
+                                vm.toggleCompleted(r.id, completed)
+                                if (completed) showCelebration = true
                             },
                             onDelete = { vm.delete(r.id) },
                             onClick = { onEdit(r.id) },
@@ -164,11 +162,10 @@ fun HomeScreen(
                         ) { r ->
                             ReminderCard(
                                 reminder = r,
-                                onToggle = { enabled ->
-                                    vm.toggleEnabled(r.id, enabled)
-                                    if (!enabled) {
-                                        showCelebration = true
-                                    }
+                                onToggleEnabled = { enabled -> vm.toggleEnabled(r.id, enabled) },
+                                onToggleCompleted = { completed ->
+                                    vm.toggleCompleted(r.id, completed)
+                                    if (completed) showCelebration = true
                                 },
                                 onDelete = { vm.delete(r.id) },
                                 onClick = { onEdit(r.id) },

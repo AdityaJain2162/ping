@@ -47,14 +47,14 @@ class HomeViewModel(
             cal.add(Calendar.DAY_OF_YEAR, 1)
             val endOfToday = cal.timeInMillis
 
-            val active = list.count { it.enabled }
+            val active = list.count { it.enabled && !it.completed }
             val overdue = list.count {
-                it.enabled && it.dueAt != null && it.dueAt < now
+                it.enabled && !it.completed && it.dueAt != null && it.dueAt < now
             }
             val dueToday = list.count {
-                it.enabled && it.dueAt != null && it.dueAt in startOfToday..endOfToday
+                it.enabled && !it.completed && it.dueAt != null && it.dueAt in startOfToday..endOfToday
             }
-            val completed = list.count { !it.enabled }
+            val completed = list.count { it.completed }
             HomeStats(active = active, overdue = overdue, dueToday = dueToday, completed = completed)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeStats(0, 0, 0, 0))
 
@@ -73,26 +73,26 @@ class HomeViewModel(
             val endOfToday = cal.timeInMillis
 
             val overdueList = list.filter {
-                it.enabled && it.dueAt != null && it.dueAt < now
+                it.enabled && !it.completed && it.dueAt != null && it.dueAt < now
             }.sortedBy { it.dueAt }
 
             val dueTodayList = list.filter {
-                it.enabled && it.dueAt != null && it.dueAt in now..endOfToday
+                it.enabled && !it.completed && it.dueAt != null && it.dueAt in now..endOfToday
             }.sortedBy { it.dueAt }
 
             val locationList = list.filter {
-                it.enabled && (it.lat != 0.0 || it.lng != 0.0) && (it.dueAt == null || it.dueAt > endOfToday)
+                it.enabled && !it.completed && (it.lat != 0.0 || it.lng != 0.0) && (it.dueAt == null || it.dueAt > endOfToday)
             }
 
             val upcomingList = list.filter {
-                it.enabled && it.dueAt != null && it.dueAt > endOfToday && (it.lat == 0.0 && it.lng == 0.0)
+                it.enabled && !it.completed && it.dueAt != null && it.dueAt > endOfToday && (it.lat == 0.0 && it.lng == 0.0)
             }.sortedBy { it.dueAt }
 
             val laterList = list.filter {
-                it.enabled && it.dueAt == null && (it.lat == 0.0 && it.lng == 0.0)
+                it.enabled && !it.completed && it.dueAt == null && (it.lat == 0.0 && it.lng == 0.0)
             }
 
-            val completedList = list.filter { !it.enabled }
+            val completedList = list.filter { it.completed }
 
             buildList {
                 if (overdueList.isNotEmpty()) add(ReminderSection("Overdue", overdueList, isOverdue = true))
@@ -116,6 +116,21 @@ class HomeViewModel(
         } else {
             AlarmScheduler.cancel(appContext, id)
             NagScheduler.cancel(appContext, id)
+        }
+    }
+
+    fun toggleCompleted(id: Long, completed: Boolean) = viewModelScope.launch {
+        repo.setCompleted(id, completed)
+        // If marking complete, cancel any pending alarms/nags
+        if (completed) {
+            AlarmScheduler.cancel(appContext, id)
+            NagScheduler.cancel(appContext, id)
+        } else {
+            // If marking incomplete again, reschedule the alarm if still enabled
+            val reminder = repo.getById(id) ?: return@launch
+            if (reminder.enabled && reminder.dueAt != null) {
+                AlarmScheduler.schedule(appContext, reminder)
+            }
         }
     }
 
