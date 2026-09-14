@@ -73,6 +73,15 @@
     <string name="location_off_title">Location is turned off</string>
     <string name="location_off_message">Location services are disabled. Enable them to use location-based reminders and pick your current location.</string>
     <string name="location_off_open_settings">Open location settings</string>
+
+    <!-- UI revamp -->
+    <string name="home_empty_title">No reminders yet</string>
+    <string name="home_empty_subtitle">Add a reminder to never forget something important. Time, location, or both — your choice.</string>
+    <string name="home_empty_cta">Add your first reminder</string>
+    <string name="home_stat_active">Active</string>
+    <string name="home_stat_overdue">Overdue</string>
+    <string name="home_stat_completed">Done</string>
+    <string name="card_overdue">Overdue</string>
     <string name="add_title_label">Title</string>
     <string name="add_pick_current">Use current location</string>
     <string name="add_pick_map">Pick on map</string>
