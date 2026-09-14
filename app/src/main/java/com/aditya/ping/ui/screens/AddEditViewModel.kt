@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.aditya.ping.data.ReminderEntity
 import com.aditya.ping.data.ReminderRepository
 import com.aditya.ping.util.AlarmScheduler
+import com.aditya.ping.util.NagScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -144,6 +145,8 @@ class AddEditViewModel(
         }
 
         val saved = entity.copy(id = id)
+        // Always cancel old nag when saving — it will be rescheduled when the alarm fires
+        NagScheduler.cancel(appContext, id)
         if (saved.dueAt != null && saved.enabled) {
             AlarmScheduler.schedule(appContext, saved)
         } else if (s.isEdit) {
