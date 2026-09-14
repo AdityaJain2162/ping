@@ -28,6 +28,12 @@ data class AddEditState(
     val isAlarm: Boolean = false,
     /** snooze interval in minutes */
     val snoozeMinutes: Int = 10,
+    /** recurrence type: 0=none, 1=daily, 2=weekly, 3=weekdays, 4=weekends, 5=monthly, 6=yearly, 7=custom */
+    val recurrenceType: Int = 0,
+    /** custom recurrence interval (e.g., every N days) */
+    val recurrenceInterval: Int = 1,
+    /** recurrence end date epoch millis, null = no end */
+    val recurrenceEndDate: Long? = null,
     val isEdit: Boolean = false,
     val saving: Boolean = false,
     val saved: Boolean = false,
@@ -50,6 +56,8 @@ class AddEditViewModel(
                     lat = r.lat, lng = r.lng, addressLabel = r.addressLabel,
                     radiusMeters = r.radiusMeters, triggerType = r.triggerType,
                     dueAt = r.dueAt, isAlarm = r.isAlarm, snoozeMinutes = r.snoozeMinutes,
+                    recurrenceType = r.recurrenceType, recurrenceInterval = r.recurrenceInterval,
+                    recurrenceEndDate = r.recurrenceEndDate,
                     isEdit = true,
                 )
             }
@@ -65,6 +73,9 @@ class AddEditViewModel(
     fun onDueAtChange(v: Long?) = _state.update { it.copy(dueAt = v) }
     fun onAlarmToggle(v: Boolean) = _state.update { it.copy(isAlarm = v) }
     fun onSnoozeChange(v: Int) = _state.update { it.copy(snoozeMinutes = v.coerceIn(1, 60)) }
+    fun onRecurrenceTypeChange(v: Int) = _state.update { it.copy(recurrenceType = v) }
+    fun onRecurrenceIntervalChange(v: Int) = _state.update { it.copy(recurrenceInterval = v.coerceAtLeast(1)) }
+    fun onRecurrenceEndDateChange(v: Long?) = _state.update { it.copy(recurrenceEndDate = v) }
 
     fun save() = viewModelScope.launch {
         val s = _state.value
@@ -87,6 +98,9 @@ class AddEditViewModel(
             dueAt = s.dueAt,
             isAlarm = s.isAlarm,
             snoozeMinutes = s.snoozeMinutes,
+            recurrenceType = if (s.dueAt != null) s.recurrenceType else 0,
+            recurrenceInterval = s.recurrenceInterval,
+            recurrenceEndDate = s.recurrenceEndDate,
         )
         val id = if (s.isEdit) {
             repo.update(entity)

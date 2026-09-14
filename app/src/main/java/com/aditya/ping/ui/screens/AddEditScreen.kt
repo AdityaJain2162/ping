@@ -165,6 +165,51 @@ fun AddEditScreen(
                 }
             }
 
+            // --- Recurrence section (only shown when time is set) ---
+            if (state.dueAt != null) {
+                Text(stringResource(R.string.add_recurrence_label), style = MaterialTheme.typography.labelLarge)
+                val recurrenceOptions = remember {
+                    listOf(
+                        0 to "Once", 1 to "Daily", 2 to "Weekly",
+                        3 to "Weekdays", 4 to "Weekends", 5 to "Monthly",
+                    )
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    recurrenceOptions.take(3).forEach { (type, label) ->
+                        FilterChip(
+                            selected = state.recurrenceType == type,
+                            onClick = { vm.onRecurrenceTypeChange(type) },
+                            label = { Text(label) },
+                        )
+                    }
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    recurrenceOptions.drop(3).forEach { (type, label) ->
+                        FilterChip(
+                            selected = state.recurrenceType == type,
+                            onClick = { vm.onRecurrenceTypeChange(type) },
+                            label = { Text(label) },
+                        )
+                    }
+                }
+                if (state.recurrenceType == 7) {
+                    OutlinedTextField(
+                        value = state.recurrenceInterval.toString(),
+                        onValueChange = { v -> v.toIntOrNull()?.let { vm.onRecurrenceIntervalChange(it) } },
+                        label = { Text(stringResource(R.string.add_recurrence_interval)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
             // --- Location trigger section ---
             Text(stringResource(R.string.add_location_label), style = MaterialTheme.typography.labelLarge)
             OutlinedButton(onClick = {

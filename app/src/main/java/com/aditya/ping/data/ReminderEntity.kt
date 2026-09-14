@@ -21,6 +21,12 @@ data class ReminderEntity(
     val isAlarm: Boolean = false,
     /** snooze interval in minutes, 0 = no snooze */
     val snoozeMinutes: Int = 10,
+    /** recurrence type: 0=none, 1=daily, 2=weekly, 3=weekdays, 4=weekends, 5=monthly, 6=yearly, 7=custom */
+    val recurrenceType: Int = 0,
+    /** custom recurrence interval (e.g., every N days/weeks) — used when recurrenceType=7 */
+    val recurrenceInterval: Int = 1,
+    /** recurrence end date epoch millis, null = no end */
+    val recurrenceEndDate: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val enabled: Boolean = true,
     /** last fired epoch millis (cooldown) */
