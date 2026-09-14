@@ -1,13 +1,14 @@
-# GeoNote — Location Reminders
+# Ping — Reminders, Alarms & Location Alerts
 
-> Reminders that find you. Privacy-first, ad-supported, no account, no cloud.
+> Reminders that find you. Alarms that wake you. Privacy-first, no account, no cloud.
 
-GeoNote is a native Android app built in **Kotlin + Jetpack Compose + Material 3**
-that fires a notification when you arrive at (or leave) a saved place. It was
-built to fill the gap left when Google removed location-based reminders from
-Keep in H2 2025.
+Ping is a native Android app built in **Kotlin + Jetpack Compose + Material 3**
+for location-based reminders, time-based reminders, and full-screen alarms. It
+was built to fill the gap left when Google removed location-based reminders
+from Keep in H2 2025 — and expands beyond location into a complete reminder +
+alarm hub.
 
-## Features
+## Current features (v0.1)
 
 - **Location-based reminders** — pin a place, write a note, get notified on
   arrival or departure.
@@ -16,8 +17,24 @@ Keep in H2 2025.
 - **Dynamic Color** on Android 12+ (auto-disabled for AMOLED to keep true black).
 - **Privacy-first** — all data is local (Room DB). No account, no cloud sync,
   no tracking.
-- **Ad-supported** — a single banner ad on the home screen (never mid-task).
+- **Ad-supported** (Play Store flavor) — a single banner ad on the home screen
+  (never mid-task). Community flavor is ad-free.
 - **Offline-first** — reminders fire without an internet connection.
+
+## Roadmap
+
+See [AGENTS.md](AGENTS.md) section 2 for the full feature roadmap. Highlights:
+
+- **Time-based reminders** + AlarmManager (P0)
+- **Full-screen alarms** with escalating volume, snooze, anti-sleep dismiss (P0)
+- **Reboot recovery** — reminders + alarms survive reboot (P0)
+- **Recurring reminders + alarms** (P0)
+- **Nag mode** — persistent notifications until done (P1)
+- **Saved places** — Home, Work, Gym instant pick (P1)
+- **Calendar view** — month/week/day (P2)
+- **Smart lists** — Due Today, Nearby, Overdue (P3)
+- **Natural language input** — on-device parsing (P3)
+- **Wear OS** support (P5)
 
 ## Tech stack
 
@@ -27,16 +44,26 @@ Keep in H2 2025.
 | Navigation | Navigation-Compose |
 | Persistence | Room (KSP) |
 | Location | Google Play Services FusedLocationProvider |
-| Ads | Google Mobile Ads (AdMob) |
+| Alarms | AlarmManager + AlarmReceiver (coming) |
+| Ads | Google Mobile Ads (AdMob) — playstore flavor only |
 | Theme persistence | DataStore Preferences |
 | Background | Foreground service + boot receiver |
+
+## Product flavors
+
+| Flavor | App ID | Ads | Purpose |
+|--------|--------|-----|---------|
+| `community` | `com.aditya.ping.community` | No | Ad-free, sideloadable |
+| `playstore` | `com.aditya.ping` | Yes (AdMob) | Play Store release |
 
 ## Build
 
 ```bash
 # Requires Android SDK Platform 34 + Build-Tools 34.0.0 + Google Play services
-./gradlew assembleDebug
-./gradlew installDebug
+./gradlew assembleCommunityDebug    # ad-free APK
+./gradlew assemblePlaystoreDebug     # ad-supported APK
+./gradlew assembleDebug              # both flavors
+./gradlew installCommunityDebug      # install ad-free on device
 ```
 
 ## Project structure
@@ -44,15 +71,18 @@ Keep in H2 2025.
 See [AGENTS.md](AGENTS.md) for the full architecture playbook.
 
 ```
-app/src/main/java/com/adityajain/geonote/
-├── ui/theme/        Material 3 + AMOLED color tokens, GeoNoteTheme
+app/src/main/java/com/aditya/ping/
+├── ui/theme/        Material 3 + AMOLED color tokens, PingTheme
 ├── ui/screens/      Home, AddEdit, Settings + ViewModels
-├── ui/components/   ReminderCard, BannerAd
-├── ui/navigation/   NavHost routes
+├── ui/components/   ReminderCard, BannerAd (flavor-specific)
+├── ui/navigation/   PingNavHost routes
 ├── data/            Room entity, DAO, DB, repository, ThemeRepository
 ├── domain/          ThemeMode enum
 ├── service/         GeofenceService (foreground), BootReceiver
-└── util/            LocationUtil, PermissionUtil, AdConfig, NotificationChannels
+└── util/            LocationUtil, PermissionUtil, NotificationChannels
+
+app/src/community/java/com/aditya/ping/   No-op ad stubs
+app/src/playstore/java/com/aditya/ping/  Real AdMob (AdConfig, BannerAd, AdInitializer)
 ```
 
 ## AdMob — test vs production
@@ -79,7 +109,11 @@ development, generate no real revenue):
 | `ACCESS_BACKGROUND_LOCATION` | Triggers while app is closed |
 | `POST_NOTIFICATIONS` | Show arrival/departure alerts (API 33+) |
 | `FOREGROUND_SERVICE_LOCATION` | Keep monitoring alive in background |
-| `INTERNET` / `ACCESS_NETWORK_STATE` | AdMob banner ads |
+| `SCHEDULE_EXACT_ALARM` | Exact alarm scheduling (Android 12+) — coming |
+| `RECEIVE_BOOT_COMPLETED` | Re-schedule reminders after reboot |
+| `VIBRATE` | Alarm vibration — coming |
+| `WAKE_LOCK` | Keep CPU awake during alarm — coming |
+| `INTERNET` / `ACCESS_NETWORK_STATE` | AdMob banner ads (playstore only) |
 
 ## License
 

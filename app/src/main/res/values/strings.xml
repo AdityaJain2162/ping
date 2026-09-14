@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">GeoNote</string>
+    <string name="app_name">Ping</string>
     <string name="app_tagline">Reminders that find you</string>
 
     <!-- Home -->
@@ -31,22 +31,22 @@
     <string name="settings_theme_amoled">AMOLED black</string>
     <string name="settings_amoled_toggle">AMOLED black</string>
     <string name="settings_about">About</string>
-    <string name="settings_about_body">GeoNote — privacy-first location reminders. No account, no tracking, no cloud. Ads support development.</string>
+    <string name="settings_about_body">Ping — privacy-first location reminders. No account, no tracking, no cloud. Ads support development.</string>
 
     <!-- Notifications -->
     <string name="notif_channel_geofence">Location reminders</string>
     <string name="notif_channel_geofence_desc">Alerts when you arrive at or leave a saved place.</string>
     <string name="notif_channel_service">Active monitoring</string>
-    <string name="notif_channel_service_desc">Shown while GeoNote watches your location in the background.</string>
-    <string name="notif_service_title">GeoNote is watching</string>
+    <string name="notif_channel_service_desc">Shown while Ping watches your location in the background.</string>
+    <string name="notif_service_title">Ping is watching</string>
     <string name="notif_service_text">Monitoring %1$d reminder(s)</string>
     <string name="notif_arrival_title">📍 You\'ve arrived</string>
     <string name="notif_departure_title">🚪 You\'ve left</string>
 
     <!-- Permissions -->
-    <string name="perm_location_rationale">GeoNote needs your location to trigger reminders when you arrive at or leave a place.</string>
+    <string name="perm_location_rationale">Ping needs your location to trigger reminders when you arrive at or leave a place.</string>
     <string name="perm_location_denied">Location permission is required for reminders to work.</string>
-    <string name="perm_background_rationale">Allow all the time so reminders fire even when GeoNote is closed.</string>
+    <string name="perm_background_rationale">Allow all the time so reminders fire even when Ping is closed.</string>
     <string name="perm_notification_rationale">Allow notifications so you see reminders when they fire.</string>
     <string name="perm_grant">Grant</string>
 

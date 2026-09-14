@@ -53,7 +53,7 @@ jobs:
       - name: Upload community release APK
         uses: actions/upload-artifact@v4
         with:
-          name: geonote-community-release-apk
+          name: ping-community-release-apk
           path: app/build/outputs/apk/community/release/*.apk
           retention-days: 30
           if-no-files-found: error
@@ -61,7 +61,7 @@ jobs:
       - name: Upload playstore release APK
         uses: actions/upload-artifact@v4
         with:
-          name: geonote-playstore-release-apk
+          name: ping-playstore-release-apk
           path: app/build/outputs/apk/playstore/release/*.apk
           retention-days: 30
           if-no-files-found: error
@@ -69,7 +69,7 @@ jobs:
       - name: Upload playstore release AAB
         uses: actions/upload-artifact@v4
         with:
-          name: geonote-playstore-release-aab
+          name: ping-playstore-release-aab
           path: app/build/outputs/bundle/playstore/release/*.aab
           retention-days: 30
           if-no-files-found: error

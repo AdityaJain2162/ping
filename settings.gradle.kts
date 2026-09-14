@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "GeoNote"
+rootProject.name = "Ping"
 include(":app")

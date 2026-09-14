@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.aditya.geonote"
+    namespace = "com.aditya.ping"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.aditya.geonote"
+        applicationId = "com.aditya.ping"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
