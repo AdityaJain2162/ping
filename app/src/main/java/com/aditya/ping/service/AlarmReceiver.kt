@@ -154,11 +154,22 @@ class AlarmReceiver : BroadcastReceiver() {
         val snoozePi = PendingIntent.getBroadcast(context, notifId + 10000, snoozeIntent, flag)
         val deferPi = PendingIntent.getBroadcast(context, notifId + 20000, deferIntent, flag)
 
+        // Tapping the notification opens the app
+        val openIntent = Intent(context, com.aditya.ping.MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        val openPi = PendingIntent.getActivity(
+            context, notifId + 50000, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
         val builder = NotificationCompat.Builder(context, NotificationChannels.ALARM)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
+            .setContentIntent(openPi)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
             .addAction(0, context.getString(R.string.notif_action_done), donePi)
             .addAction(0, context.getString(R.string.notif_action_snooze), snoozePi)

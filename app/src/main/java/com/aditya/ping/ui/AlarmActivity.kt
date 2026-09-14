@@ -14,40 +14,64 @@ import android.os.VibratorManager
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Message
+import androidx.compose.material.icons.filled.NavigateNext
+import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.filled.Whatsapp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aditya.ping.data.PingDatabase
-import com.aditya.ping.data.ReminderEntity
 import com.aditya.ping.util.AlarmScheduler
+import com.aditya.ping.util.QuickActionExecutor
 import com.aditya.ping.util.SmartSnooze
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class AlarmActivity : ComponentActivity() {
 
@@ -60,7 +84,6 @@ class AlarmActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Full-screen, show over lock screen, turn screen on
         window.addFlags(
             WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
                 WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
@@ -68,11 +91,22 @@ class AlarmActivity : ComponentActivity() {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN,
         )
 
+        // On Android 10+, use the newer API for lock screen visibility
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        }
+
+        // Request to dismiss keyguard if device is locked
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val keyguardManager = getSystemService(android.app.KeyguardManager::class.java)
+            keyguardManager?.requestDismissKeyguard(this, null)
+        }
+
         val reminderId = intent.getLongExtra(EXTRA_REMINDER_ID, -1L)
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Alarm"
         val note = intent.getStringExtra(EXTRA_NOTE).orEmpty()
 
-        // Load reminder to get custom ringtone URI and quick action
         val reminder = if (reminderId > 0) {
             try { kotlinx.coroutines.runBlocking { PingDatabase.get(this@AlarmActivity).reminderDao().getById(reminderId) } }
             catch (e: Exception) { null }
@@ -81,7 +115,7 @@ class AlarmActivity : ComponentActivity() {
         val customRingtoneUri = reminder?.ringtoneUri?.takeIf { it.isNotBlank() }
         val quickActionType = reminder?.quickActionType ?: 0
         val quickActionData = reminder?.quickActionData ?: ""
-        val quickActionLabel = com.aditya.ping.util.QuickActionExecutor.actionLabel(quickActionType)
+        val quickActionLabel = QuickActionExecutor.actionLabel(quickActionType)
         val hasQuickAction = quickActionType != 0 && quickActionData.isNotBlank()
 
         startSound(customRingtoneUri)
@@ -93,8 +127,9 @@ class AlarmActivity : ComponentActivity() {
                 title = title,
                 note = note,
                 quickActionLabel = if (hasQuickAction) quickActionLabel else null,
+                quickActionIcon = quickActionIcon(quickActionType),
                 onQuickAction = if (hasQuickAction) {
-                    { reminder?.let { com.aditya.ping.util.QuickActionExecutor.execute(this, it) } }
+                    { reminder?.let { QuickActionExecutor.execute(this, it) } }
                 } else null,
                 onDismiss = {
                     stopAlarm()
@@ -112,6 +147,15 @@ class AlarmActivity : ComponentActivity() {
                 },
             )
         }
+    }
+
+    private fun quickActionIcon(type: Int): ImageVector = when (type) {
+        1 -> Icons.Filled.Call
+        2, 7 -> Icons.Filled.Whatsapp
+        6 -> Icons.Filled.Message
+        4 -> Icons.Filled.NavigateNext
+        5 -> Icons.Filled.OpenInNew
+        else -> Icons.Filled.OpenInNew
     }
 
     private fun startSound(customUri: String? = null) {
@@ -156,7 +200,7 @@ class AlarmActivity : ComponentActivity() {
                 if (volumeLevel < maxVolume) {
                     volumeLevel++
                     audioManager.setStreamVolume(AudioManager.STREAM_ALARM, volumeLevel, 0)
-                    handler.postDelayed(this, 3000) // ramp every 3 seconds
+                    handler.postDelayed(this, 3000)
                 }
             }
         }, 3000)
@@ -169,8 +213,6 @@ class AlarmActivity : ComponentActivity() {
             val snoozeMillis = reminder.snoozeMinutes * 60_000L
             val newDueAt = System.currentTimeMillis() + snoozeMillis
             dao.update(reminder.copy(dueAt = newDueAt))
-
-            // Re-schedule the alarm
             val updated = reminder.copy(dueAt = newDueAt)
             AlarmScheduler.schedule(this@AlarmActivity, updated)
         }
@@ -199,7 +241,7 @@ class AlarmActivity : ComponentActivity() {
     }
 
     override fun onBackPressed() {
-        // Prevent accidental back-press dismissal; must use Snooze or Dismiss
+        // Prevent accidental back-press dismissal
     }
 
     companion object {
@@ -217,66 +259,157 @@ private fun AlarmScreen(
     onSnooze: () -> Unit,
     onSnoozeTo: (Long) -> Unit,
     quickActionLabel: String? = null,
+    quickActionIcon: ImageVector? = null,
     onQuickAction: (() -> Unit)? = null,
 ) {
     var showSnoozeOptions by remember { mutableStateOf(false) }
     val snoozeOptions = remember { SmartSnooze.options() }
+    val currentTime = remember { SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date()) }
 
-    Column(
+    // Pulsing alarm icon animation
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "pulseScale",
+    )
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF1A0A0A),
+                        Color(0xFF2D1010),
+                        Color(0xFF1A0A0A),
+                    ),
+                ),
+            ),
+        contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = "ALARM",
-            color = Color.White,
-            fontSize = 20.sp,
-            letterSpacing = 4.sp,
-        )
-        Spacer(Modifier.height(24.dp))
-        Text(
-            text = title,
-            color = Color.White,
-            fontSize = 32.sp,
-            style = MaterialTheme.typography.headlineMedium,
-        )
-        if (note.isNotBlank()) {
-            Spacer(Modifier.height(16.dp))
-            Text(
-                text = note,
-                color = Color.White.copy(alpha = 0.8f),
-                fontSize = 18.sp,
-            )
-        }
-        Spacer(Modifier.height(48.dp))
-        Button(
-            onClick = onDismiss,
-            modifier = Modifier.fillMaxWidth().height(64.dp),
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 32.dp, vertical = 48.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceEvenly,
         ) {
-            Text("Dismiss", fontSize = 20.sp)
-        }
-        Spacer(Modifier.height(16.dp))
-        OutlinedButton(
-            onClick = { showSnoozeOptions = true },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-        ) {
-            Text("Snooze", fontSize = 18.sp, color = Color.White)
-        }
-        if (quickActionLabel != null && onQuickAction != null) {
-            Spacer(Modifier.height(16.dp))
-            OutlinedButton(
-                onClick = onQuickAction,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+            // Top: Pulsing alarm icon
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(quickActionLabel, fontSize = 18.sp, color = MaterialTheme.colorScheme.tertiary)
+                Box(
+                    modifier = Modifier
+                        .size(96.dp)
+                        .scale(pulseScale)
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(
+                            Brush.radialGradient(
+                                listOf(Color(0xFFE85D5D), Color(0xFFE85D5D).copy(alpha = 0.3f)),
+                            ),
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Alarm,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(52.dp),
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = currentTime,
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Light,
+                )
+            }
+
+            // Middle: Title and note
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = title,
+                    color = Color.White,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                if (note.isNotBlank()) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = note,
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 18.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    )
+                }
+            }
+
+            // Bottom: Action buttons
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                // Quick action button (prominent, gradient)
+                if (quickActionLabel != null && onQuickAction != null && quickActionIcon != null) {
+                    Button(
+                        onClick = onQuickAction,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF25D366), // WhatsApp green
+                            contentColor = Color.White,
+                        ),
+                    ) {
+                        Icon(quickActionIcon, contentDescription = null, modifier = Modifier.size(24.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Text(quickActionLabel, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                }
+
+                // Dismiss button
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFE85D5D),
+                        contentColor = Color.White,
+                    ),
+                ) {
+                    Text("Dismiss", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                // Snooze button
+                OutlinedButton(
+                    onClick = { showSnoozeOptions = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(20.dp),
+                ) {
+                    Text("Snooze", fontSize = 16.sp, color = Color.White.copy(alpha = 0.9f))
+                }
             }
         }
 
+        // Snooze options dialog
         if (showSnoozeOptions) {
-            androidx.compose.material3.AlertDialog(
+            AlertDialog(
                 onDismissRequest = { showSnoozeOptions = false },
                 title = { Text("Snooze for…") },
                 text = {
