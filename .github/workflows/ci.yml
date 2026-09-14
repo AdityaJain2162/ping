@@ -12,9 +12,9 @@ concurrency:
 
 jobs:
   build:
-    name: Build & Lint
+    name: Build Both Flavors
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     permissions:
       contents: read
@@ -49,22 +49,31 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Run Kotlin compilation
-        run: ./gradlew compileDebugKotlin --no-daemon
+      - name: Build community debug APK (ad-free)
+        run: ./gradlew assembleCommunityDebug --no-daemon
+
+      - name: Build playstore debug APK (with ads)
+        run: ./gradlew assemblePlaystoreDebug --no-daemon
 
       - name: Run Android Lint
-        run: ./gradlew lintDebug --no-daemon
+        run: ./gradlew lintCommunityDebug --no-daemon
         continue-on-error: true
 
-      - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon
-
-      - name: Upload debug APK
+      - name: Upload community APK
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: geonote-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: geonote-community-debug-apk
+          path: app/build/outputs/apk/community/debug/*.apk
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Upload playstore APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: geonote-playstore-debug-apk
+          path: app/build/outputs/apk/playstore/debug/*.apk
           retention-days: 7
           if-no-files-found: error
 
