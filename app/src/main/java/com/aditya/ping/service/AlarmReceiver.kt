@@ -82,13 +82,51 @@ class AlarmReceiver : BroadcastReceiver() {
     }
 
     private fun launchAlarmActivity(context: Context, id: Long, title: String, note: String) {
-        val intent = Intent(context, AlarmActivity::class.java).apply {
+        val alarmIntent = Intent(context, AlarmActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             putExtra(AlarmActivity.EXTRA_REMINDER_ID, id)
             putExtra(AlarmActivity.EXTRA_TITLE, title)
             putExtra(AlarmActivity.EXTRA_NOTE, note)
         }
-        context.startActivity(intent)
+
+        val fullScreenPi = PendingIntent.getActivity(
+            context,
+            id.toInt(),
+            alarmIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        // Use a full-screen intent notification — the Android-recommended way
+        // to launch an activity from a BroadcastReceiver (avoids BAL block).
+        // On locked devices this shows the full-screen alarm directly.
+        // On unlocked devices it shows a heads-up notification that expands.
+        val notifId = id.toInt() + 40000
+
+        val builder = NotificationCompat.Builder(context, NotificationChannels.ALARM)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(note.ifBlank { context.getString(R.string.notif_channel_alarm) })
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setFullScreenIntent(fullScreenPi, true)
+            .setAutoCancel(true)
+            .setOngoing(true)
+
+        if (note.isNotBlank()) builder.setStyle(NotificationCompat.BigTextStyle().bigText(note))
+
+        try {
+            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.notify(notifId, builder.build())
+            Log.d("AlarmReceiver", "Full-screen alarm notification posted for id=$id")
+        } catch (e: SecurityException) {
+            // Fallback: try direct activity launch (may fail with BAL, but worth trying)
+            Log.w("AlarmReceiver", "Full-screen intent denied, trying direct launch: ${e.message}")
+            try {
+                context.startActivity(alarmIntent)
+            } catch (e2: Exception) {
+                Log.e("AlarmReceiver", "Direct launch also failed: ${e2.message}")
+            }
+        }
     }
 
     private fun showNotification(
@@ -116,10 +154,11 @@ class AlarmReceiver : BroadcastReceiver() {
         val snoozePi = PendingIntent.getBroadcast(context, notifId + 10000, snoozeIntent, flag)
         val deferPi = PendingIntent.getBroadcast(context, notifId + 20000, deferIntent, flag)
 
-        val builder = NotificationCompat.Builder(context, NotificationChannels.GEOFENCE)
+        val builder = NotificationCompat.Builder(context, NotificationChannels.ALARM)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setAutoCancel(true)
             .addAction(0, context.getString(R.string.notif_action_done), donePi)
             .addAction(0, context.getString(R.string.notif_action_snooze), snoozePi)
