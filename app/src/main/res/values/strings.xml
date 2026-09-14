@@ -39,6 +39,11 @@
 
     <!-- Search -->
     <string name="home_search">Search reminders…</string>
+
+    <!-- Notification actions -->
+    <string name="notif_action_done">Done</string>
+    <string name="notif_action_snooze">Snooze</string>
+    <string name="notif_action_defer">Defer</string>
     <string name="add_title_label">Title</string>
     <string name="add_pick_current">Use current location</string>
     <string name="add_pick_map">Pick on map</string>

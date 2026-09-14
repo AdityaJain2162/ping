@@ -1,6 +1,7 @@
 package com.aditya.ping.service
 
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -66,11 +67,32 @@ class AlarmReceiver : BroadcastReceiver() {
     }
 
     private fun showNotification(context: Context, notifId: Int, title: String, note: String) {
+        val doneIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+            putExtra(NotificationActionReceiver.EXTRA_REMINDER_ID, notifId.toLong())
+            putExtra(NotificationActionReceiver.EXTRA_ACTION, NotificationActionReceiver.ACTION_DONE)
+        }
+        val snoozeIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+            putExtra(NotificationActionReceiver.EXTRA_REMINDER_ID, notifId.toLong())
+            putExtra(NotificationActionReceiver.EXTRA_ACTION, NotificationActionReceiver.ACTION_SNOOZE)
+        }
+        val deferIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+            putExtra(NotificationActionReceiver.EXTRA_REMINDER_ID, notifId.toLong())
+            putExtra(NotificationActionReceiver.EXTRA_ACTION, NotificationActionReceiver.ACTION_DEFER)
+        }
+
+        val flag = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        val donePi = PendingIntent.getBroadcast(context, notifId, doneIntent, flag)
+        val snoozePi = PendingIntent.getBroadcast(context, notifId + 10000, snoozeIntent, flag)
+        val deferPi = PendingIntent.getBroadcast(context, notifId + 20000, deferIntent, flag)
+
         val builder = NotificationCompat.Builder(context, NotificationChannels.GEOFENCE)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .addAction(0, context.getString(R.string.notif_action_done), donePi)
+            .addAction(0, context.getString(R.string.notif_action_snooze), snoozePi)
+            .addAction(0, context.getString(R.string.notif_action_defer), deferPi)
 
         if (note.isNotBlank()) builder.setContentText(note)
 
