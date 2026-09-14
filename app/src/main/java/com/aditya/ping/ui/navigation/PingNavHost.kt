@@ -1,16 +1,18 @@
 package com.aditya.ping.ui.navigation
 
-import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
@@ -31,12 +33,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.stringResource
-import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -52,6 +53,7 @@ import com.aditya.ping.ui.screens.HomeScreen
 import com.aditya.ping.ui.screens.ListsScreen
 import com.aditya.ping.ui.screens.SavedPlacesScreen
 import com.aditya.ping.ui.screens.SettingsScreen
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,52 +61,27 @@ fun PingNavHost() {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
+    val isOnTab = currentRoute == Routes.HOME
+    val scope = rememberCoroutineScope()
 
     val tabRoutes = listOf(Routes.HOME, Routes.SAVED_PLACES, Routes.CALENDAR, Routes.AUTOMATIONS)
-    val isTabRoute = currentRoute in tabRoutes
-    val currentIndex = tabRoutes.indexOf(currentRoute)
-
-    fun navigateToTab(index: Int) {
-        if (index < 0 || index >= tabRoutes.size) return
-        val target = tabRoutes[index]
-        nav.navigate(target) {
-            popUpTo(Routes.HOME) { saveState = true }
-            launchSingleTop = true
-            restoreState = true
-        }
-    }
-
-    val swipeModifier = if (isTabRoute) {
-        Modifier.pointerInput(currentRoute) {
-            val accumulated = mutableFloatStateOf(0f)
-            val threshold = 120f
-            detectHorizontalDragGestures(
-                onDragStart = { accumulated.floatValue = 0f },
-                onHorizontalDrag = { _, dragAmount ->
-                    accumulated.floatValue += dragAmount
-                },
-                onDragEnd = {
-                    val total = accumulated.floatValue
-                    when {
-                        total > threshold -> navigateToTab(currentIndex - 1)
-                        total < -threshold -> navigateToTab(currentIndex + 1)
-                    }
-                    accumulated.floatValue = 0f
-                },
-                onDragCancel = { accumulated.floatValue = 0f },
-            )
-        }
-    } else {
-        Modifier
-    }
+    val pagerState = rememberPagerState(pageCount = { tabRoutes.size })
 
     Scaffold(
         topBar = {
-            if (isTabRoute) {
+            if (isOnTab) {
                 TopAppBar(
-                    title = { Text(tabTitle(currentRoute)) },
+                    title = {
+                        androidx.compose.animation.AnimatedContent(
+                            targetState = pagerState.currentPage,
+                            transitionSpec = { fadeIn(spring()) togetherWith fadeOut(spring()) },
+                            label = "titleCrossfade",
+                        ) { page ->
+                            Text(tabTitle(tabRoutes[page]))
+                        }
+                    },
                     actions = {
-                        if (currentRoute == Routes.HOME) {
+                        if (pagerState.currentPage == 0) {
                             IconButton(onClick = { nav.navigate(Routes.LISTS) }) {
                                 Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.lists_title))
                             }
@@ -117,14 +94,26 @@ fun PingNavHost() {
             }
         },
         bottomBar = {
-            if (isTabRoute) {
+            if (isOnTab) {
                 NavigationBar {
-                    tabRoutes.forEach { route ->
+                    tabRoutes.forEachIndexed { index, route ->
                         val (icon, label) = tabInfo(route)
+                        val selected = pagerState.currentPage == index
+                        val iconScale by animateFloatAsState(
+                            targetValue = if (selected) 1.15f else 1f,
+                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                            label = "navIconScale",
+                        )
                         NavigationBarItem(
-                            selected = currentRoute == route,
-                            onClick = { navigateToTab(tabRoutes.indexOf(route)) },
-                            icon = { Icon(icon, contentDescription = label) },
+                            selected = selected,
+                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                            icon = {
+                                Icon(
+                                    icon,
+                                    contentDescription = label,
+                                    modifier = Modifier.scale(iconScale),
+                                )
+                            },
                             label = { Text(label) },
                         )
                     }
@@ -132,7 +121,11 @@ fun PingNavHost() {
             }
         },
         floatingActionButton = {
-            if (currentRoute == Routes.HOME) {
+            AnimatedVisibility(
+                visible = isOnTab && pagerState.currentPage == 0,
+                enter = scaleIn(spring(stiffness = Spring.StiffnessMediumLow)),
+                exit = scaleOut(spring(stiffness = Spring.StiffnessMediumLow)),
+            ) {
                 FloatingActionButton(
                     onClick = { nav.navigate(Routes.ADD) },
                     shape = MaterialTheme.shapes.extraLarge,
@@ -144,83 +137,36 @@ fun PingNavHost() {
             }
         },
     ) { inner ->
-        val tabDuration = 350
-
-        // Slide direction is determined by comparing tab indices of the
-        // initial and target routes. Only slides when both are tab routes;
-        // falls back to fade for non-tab transitions (Add, Edit, Settings, etc.)
-        val tabEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-            val initialIndex = tabRoutes.indexOf(initialState.destination.route)
-            val targetIndex = tabRoutes.indexOf(targetState.destination.route)
-            if (initialIndex >= 0 && targetIndex >= 0 && targetIndex > initialIndex) {
-                slideInHorizontally(tween(tabDuration)) { it } + fadeIn(tween(tabDuration))
-            } else if (initialIndex >= 0 && targetIndex >= 0 && targetIndex < initialIndex) {
-                slideInHorizontally(tween(tabDuration)) { -it } + fadeIn(tween(tabDuration))
-            } else {
-                fadeIn(tween(tabDuration))
-            }
-        }
-        val tabExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-            val initialIndex = tabRoutes.indexOf(initialState.destination.route)
-            val targetIndex = tabRoutes.indexOf(targetState.destination.route)
-            if (initialIndex >= 0 && targetIndex >= 0 && targetIndex > initialIndex) {
-                slideOutHorizontally(tween(tabDuration)) { -it } + fadeOut(tween(tabDuration))
-            } else if (initialIndex >= 0 && targetIndex >= 0 && targetIndex < initialIndex) {
-                slideOutHorizontally(tween(tabDuration)) { it } + fadeOut(tween(tabDuration))
-            } else {
-                fadeOut(tween(tabDuration))
-            }
-        }
-
         NavHost(
             navController = nav,
             startDestination = Routes.HOME,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(inner)
-                .then(swipeModifier),
+            modifier = Modifier.fillMaxSize().padding(inner),
+            enterTransition = { fadeIn() },
+            exitTransition = { fadeOut() },
         ) {
-            composable(
-                Routes.HOME,
-                enterTransition = tabEnter,
-                exitTransition = tabExit,
-            ) {
-                HomeScreen(
-                    onAdd = { nav.navigate(Routes.ADD) },
-                    onEdit = { id -> nav.navigate(Routes.edit(id)) },
-                    onSettings = { nav.navigate(Routes.SETTINGS) },
-                    onSavedPlaces = { nav.navigate(Routes.SAVED_PLACES) },
-                    onLists = { nav.navigate(Routes.LISTS) },
-                    onCalendar = { nav.navigate(Routes.CALENDAR) },
-                    onHistory = { nav.navigate(Routes.HISTORY) },
-                )
-            }
-            composable(
-                Routes.SAVED_PLACES,
-                enterTransition = tabEnter,
-                exitTransition = tabExit,
-            ) {
-                SavedPlacesScreen(onBack = { nav.popBackStack() })
-            }
-            composable(Routes.LISTS) {
-                ListsScreen(onBack = { nav.popBackStack() })
-            }
-            composable(
-                Routes.CALENDAR,
-                enterTransition = tabEnter,
-                exitTransition = tabExit,
-            ) {
-                CalendarScreen(
-                    onBack = { nav.popBackStack() },
-                    onEdit = { id -> nav.navigate(Routes.edit(id)) },
-                )
-            }
-            composable(
-                Routes.AUTOMATIONS,
-                enterTransition = tabEnter,
-                exitTransition = tabExit,
-            ) {
-                AutomationsScreen()
+            composable(Routes.HOME) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                ) { page ->
+                    when (tabRoutes[page]) {
+                        Routes.HOME -> HomeScreen(
+                            onAdd = { nav.navigate(Routes.ADD) },
+                            onEdit = { id -> nav.navigate(Routes.edit(id)) },
+                            onSettings = { nav.navigate(Routes.SETTINGS) },
+                            onSavedPlaces = { scope.launch { pagerState.animateScrollToPage(1) } },
+                            onLists = { nav.navigate(Routes.LISTS) },
+                            onCalendar = { scope.launch { pagerState.animateScrollToPage(2) } },
+                            onHistory = { nav.navigate(Routes.HISTORY) },
+                        )
+                        Routes.SAVED_PLACES -> SavedPlacesScreen(onBack = { scope.launch { pagerState.animateScrollToPage(0) } })
+                        Routes.CALENDAR -> CalendarScreen(
+                            onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
+                            onEdit = { id -> nav.navigate(Routes.edit(id)) },
+                        )
+                        Routes.AUTOMATIONS -> AutomationsScreen()
+                    }
+                }
             }
             composable(Routes.ADD) {
                 AddEditScreen(
@@ -243,6 +189,9 @@ fun PingNavHost() {
             composable(Routes.SETTINGS) {
                 SettingsScreen(onBack = { nav.popBackStack() })
             }
+            composable(Routes.LISTS) {
+                ListsScreen(onBack = { nav.popBackStack() })
+            }
             composable(Routes.HISTORY) {
                 HistoryScreen(onBack = { nav.popBackStack() })
             }
@@ -251,7 +200,7 @@ fun PingNavHost() {
 }
 
 @Composable
-private fun tabTitle(route: String?): String = when (route) {
+private fun tabTitle(route: String): String = when (route) {
     Routes.HOME -> stringResource(R.string.home_title)
     Routes.SAVED_PLACES -> stringResource(R.string.saved_places_title)
     Routes.CALENDAR -> stringResource(R.string.calendar_title)
