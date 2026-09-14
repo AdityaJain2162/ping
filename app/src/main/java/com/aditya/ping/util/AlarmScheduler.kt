@@ -53,7 +53,7 @@ object AlarmScheduler {
      * when toggling a reminder back on.
      */
     suspend fun rescheduleAll(context: Context, reminders: List<ReminderEntity>) {
-        reminders.filter { it.enabled && it.dueAt != null && it.dueAt > System.currentTimeMillis() }
+        reminders.filter { it.enabled && !it.completed && it.dueAt != null && it.dueAt > System.currentTimeMillis() }
             .forEach { schedule(context, it) }
     }
 }
