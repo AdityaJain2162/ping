@@ -82,6 +82,19 @@
     <string name="home_stat_overdue">Overdue</string>
     <string name="home_stat_completed">Done</string>
     <string name="card_overdue">Overdue</string>
+
+    <!-- Quick actions -->
+    <string name="add_quick_action">When triggered, also:</string>
+    <string name="quick_action_none">Nothing</string>
+    <string name="quick_action_call">Call</string>
+    <string name="quick_action_whatsapp">WhatsApp</string>
+    <string name="quick_action_open_app">Open app</string>
+    <string name="quick_action_navigate">Navigate</string>
+    <string name="quick_action_url">Open URL</string>
+    <string name="quick_action_call_hint">Phone number (e.g., +1234567890)</string>
+    <string name="quick_action_whatsapp_hint">Phone number with country code (e.g., 1234567890)</string>
+    <string name="quick_action_app_hint">App package name (e.g., com.whatsapp)</string>
+    <string name="quick_action_url_hint">URL (e.g., https://example.com)</string>
     <string name="add_title_label">Title</string>
     <string name="add_pick_current">Use current location</string>
     <string name="add_pick_map">Pick on map</string>

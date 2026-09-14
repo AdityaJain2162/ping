@@ -40,6 +40,10 @@ data class AddEditState(
     val nagIntervalMinutes: Int = 15,
     /** combined trigger mode: 0=OR (fire on either time or location), 1=AND (both required) */
     val triggerMode: Int = 0,
+    /** quick action type: 0=none, 1=call, 2=whatsapp, 3=open app, 4=navigate, 5=url */
+    val quickActionType: Int = 0,
+    /** quick action data: phone number, package name, URL */
+    val quickActionData: String = "",
     val isEdit: Boolean = false,
     val saving: Boolean = false,
     val saved: Boolean = false,
@@ -66,6 +70,8 @@ class AddEditViewModel(
                     recurrenceEndDate = r.recurrenceEndDate,
                     nagMode = r.nagMode, nagIntervalMinutes = r.nagIntervalMinutes,
                     triggerMode = r.triggerMode,
+                    quickActionType = r.quickActionType,
+                    quickActionData = r.quickActionData,
                     isEdit = true,
                 )
             }
@@ -87,6 +93,8 @@ class AddEditViewModel(
     fun onNagModeToggle(v: Boolean) = _state.update { it.copy(nagMode = v) }
     fun onNagIntervalChange(v: Int) = _state.update { it.copy(nagIntervalMinutes = v.coerceIn(1, 120)) }
     fun onTriggerModeChange(v: Int) = _state.update { it.copy(triggerMode = v) }
+    fun onQuickActionTypeChange(v: Int) = _state.update { it.copy(quickActionType = v) }
+    fun onQuickActionDataChange(v: String) = _state.update { it.copy(quickActionData = v) }
 
     fun save() = viewModelScope.launch {
         val s = _state.value
@@ -115,6 +123,8 @@ class AddEditViewModel(
             nagMode = s.nagMode,
             nagIntervalMinutes = s.nagIntervalMinutes,
             triggerMode = if (hasLocation && hasTime) s.triggerMode else 0,
+            quickActionType = s.quickActionType,
+            quickActionData = s.quickActionData.trim(),
         )
         val id = if (s.isEdit) {
             repo.update(entity)
