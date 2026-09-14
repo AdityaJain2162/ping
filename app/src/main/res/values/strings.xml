@@ -44,6 +44,13 @@
     <string name="notif_action_done">Done</string>
     <string name="notif_action_snooze">Snooze</string>
     <string name="notif_action_defer">Defer</string>
+
+    <!-- Quiet hours -->
+    <string name="quiet_hours_title">Quiet hours</string>
+    <string name="quiet_hours_enable">Enable quiet hours</string>
+    <string name="quiet_hours_start">Start</string>
+    <string name="quiet_hours_end">End</string>
+    <string name="quiet_hours_desc">Non-alarm reminders during quiet hours will be deferred until quiet hours end. Alarms always fire.</string>
     <string name="add_title_label">Title</string>
     <string name="add_pick_current">Use current location</string>
     <string name="add_pick_map">Pick on map</string>
