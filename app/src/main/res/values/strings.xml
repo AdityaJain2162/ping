@@ -169,6 +169,8 @@
     <string name="notif_channel_geofence_desc">Alerts when you arrive at or leave a saved place.</string>
     <string name="notif_channel_service">Active monitoring</string>
     <string name="notif_channel_service_desc">Shown while Ping watches your location in the background.</string>
+    <string name="notif_channel_alarm">Alarms</string>
+    <string name="notif_channel_alarm_desc">Full-screen alarms that ring and vibrate until dismissed.</string>
     <string name="notif_service_title">Ping is watching</string>
     <string name="notif_service_text">Monitoring %1$d reminder(s)</string>
     <string name="notif_arrival_title">📍 You\'ve arrived</string>

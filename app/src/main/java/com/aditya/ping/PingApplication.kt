@@ -31,5 +31,22 @@ class PingApplication : Application() {
                 NotificationManager.IMPORTANCE_LOW,
             ).apply { description = getString(R.string.notif_channel_service_desc) },
         )
+        manager.createNotificationChannel(
+            NotificationChannel(
+                NotificationChannels.ALARM,
+                getString(R.string.notif_channel_alarm),
+                NotificationManager.IMPORTANCE_HIGH,
+            ).apply {
+                description = getString(R.string.notif_channel_alarm_desc)
+                setBypassDnd(true)
+                setSound(
+                    android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM),
+                    android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build(),
+                )
+            },
+        )
     }
 }
