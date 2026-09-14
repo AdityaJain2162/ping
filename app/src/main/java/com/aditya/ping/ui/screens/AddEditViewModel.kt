@@ -38,6 +38,8 @@ data class AddEditState(
     val nagMode: Boolean = false,
     /** nag interval in minutes */
     val nagIntervalMinutes: Int = 15,
+    /** combined trigger mode: 0=OR (fire on either time or location), 1=AND (both required) */
+    val triggerMode: Int = 0,
     val isEdit: Boolean = false,
     val saving: Boolean = false,
     val saved: Boolean = false,
@@ -63,6 +65,7 @@ class AddEditViewModel(
                     recurrenceType = r.recurrenceType, recurrenceInterval = r.recurrenceInterval,
                     recurrenceEndDate = r.recurrenceEndDate,
                     nagMode = r.nagMode, nagIntervalMinutes = r.nagIntervalMinutes,
+                    triggerMode = r.triggerMode,
                     isEdit = true,
                 )
             }
@@ -83,6 +86,7 @@ class AddEditViewModel(
     fun onRecurrenceEndDateChange(v: Long?) = _state.update { it.copy(recurrenceEndDate = v) }
     fun onNagModeToggle(v: Boolean) = _state.update { it.copy(nagMode = v) }
     fun onNagIntervalChange(v: Int) = _state.update { it.copy(nagIntervalMinutes = v.coerceIn(1, 120)) }
+    fun onTriggerModeChange(v: Int) = _state.update { it.copy(triggerMode = v) }
 
     fun save() = viewModelScope.launch {
         val s = _state.value
@@ -110,6 +114,7 @@ class AddEditViewModel(
             recurrenceEndDate = s.recurrenceEndDate,
             nagMode = s.nagMode,
             nagIntervalMinutes = s.nagIntervalMinutes,
+            triggerMode = if (hasLocation && hasTime) s.triggerMode else 0,
         )
         val id = if (s.isEdit) {
             repo.update(entity)

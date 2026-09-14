@@ -281,6 +281,33 @@ fun AddEditScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            // --- Combined trigger mode (only when both time and location are set) ---
+            val hasLocation = state.lat != 0.0 || state.lng != 0.0
+            val hasTime = state.dueAt != null
+            if (hasLocation && hasTime) {
+                Text(stringResource(R.string.add_trigger_mode), style = MaterialTheme.typography.labelLarge)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = state.triggerMode == 0,
+                        onClick = { vm.onTriggerModeChange(0) },
+                        label = { Text(stringResource(R.string.add_trigger_mode_or)) },
+                    )
+                    FilterChip(
+                        selected = state.triggerMode == 1,
+                        onClick = { vm.onTriggerModeChange(1) },
+                        label = { Text(stringResource(R.string.add_trigger_mode_and)) },
+                    )
+                }
+                Text(
+                    stringResource(
+                        if (state.triggerMode == 0) R.string.add_trigger_mode_or_desc
+                        else R.string.add_trigger_mode_and_desc,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                 Button(
                     onClick = vm::save,
