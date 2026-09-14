@@ -61,6 +61,13 @@
     <string name="data_export">Export</string>
     <string name="data_import">Import</string>
     <string name="data_desc">Export copies all reminders, lists, and saved places as JSON to clipboard. Paste it somewhere safe. Import reads from clipboard.</string>
+
+    <!-- Combined triggers -->
+    <string name="add_trigger_mode">When both time and location are set</string>
+    <string name="add_trigger_mode_or">Fire on either</string>
+    <string name="add_trigger_mode_and">Require both</string>
+    <string name="add_trigger_mode_or_desc">Reminder fires when the time arrives OR when you reach the location — whichever comes first.</string>
+    <string name="add_trigger_mode_and_desc">Reminder fires only when you are at the location AND the time window is active.</string>
     <string name="add_title_label">Title</string>
     <string name="add_pick_current">Use current location</string>
     <string name="add_pick_map">Pick on map</string>
