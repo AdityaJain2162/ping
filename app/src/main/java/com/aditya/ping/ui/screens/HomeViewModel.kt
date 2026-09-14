@@ -58,7 +58,7 @@ class HomeViewModel(
             HomeStats(active = active, overdue = overdue, dueToday = dueToday, completed = completed)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeStats(0, 0, 0, 0))
 
-    /** Sectioned reminders for grouped display */
+    /** Sectioned reminders for grouped display — completed reminders are NOT shown here */
     val sections: StateFlow<List<ReminderSection>> =
         reminders.map { list ->
             val now = System.currentTimeMillis()
@@ -92,7 +92,8 @@ class HomeViewModel(
                 it.enabled && !it.completed && it.dueAt == null && (it.lat == 0.0 && it.lng == 0.0)
             }
 
-            val completedList = list.filter { it.completed }
+            // Disabled (but not completed) reminders — shown in a separate section
+            val disabledList = list.filter { !it.enabled && !it.completed }
 
             buildList {
                 if (overdueList.isNotEmpty()) add(ReminderSection("Overdue", overdueList, isOverdue = true))
@@ -100,9 +101,26 @@ class HomeViewModel(
                 if (locationList.isNotEmpty()) add(ReminderSection("Location", locationList))
                 if (upcomingList.isNotEmpty()) add(ReminderSection("Upcoming", upcomingList))
                 if (laterList.isNotEmpty()) add(ReminderSection("Later", laterList))
-                if (completedList.isNotEmpty()) add(ReminderSection("Completed", completedList))
+                if (disabledList.isNotEmpty()) add(ReminderSection("Disabled", disabledList))
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** History of completed reminders from the last 3 months */
+    val history: StateFlow<List<ReminderEntity>> =
+        repo.observeHistory(threeMonthsAgo())
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Count of completed reminders (for the "View History" badge) */
+    val historyCount: StateFlow<Int> =
+        history.map { it.size }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    init {
+        // Prune completed reminders older than 3 months on startup
+        viewModelScope.launch {
+            repo.pruneOldCompleted(threeMonthsAgo())
+        }
+    }
 
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
@@ -120,13 +138,12 @@ class HomeViewModel(
     }
 
     fun toggleCompleted(id: Long, completed: Boolean) = viewModelScope.launch {
-        repo.setCompleted(id, completed)
-        // If marking complete, cancel any pending alarms/nags
+        val timestamp = if (completed) System.currentTimeMillis() else null
+        repo.setCompleted(id, completed, timestamp)
         if (completed) {
             AlarmScheduler.cancel(appContext, id)
             NagScheduler.cancel(appContext, id)
         } else {
-            // If marking incomplete again, reschedule the alarm if still enabled
             val reminder = repo.getById(id) ?: return@launch
             if (reminder.enabled && reminder.dueAt != null) {
                 AlarmScheduler.schedule(appContext, reminder)
@@ -138,6 +155,12 @@ class HomeViewModel(
         AlarmScheduler.cancel(appContext, id)
         NagScheduler.cancel(appContext, id)
         repo.deleteById(id)
+    }
+
+    private fun threeMonthsAgo(): Long {
+        val cal = Calendar.getInstance()
+        cal.add(Calendar.MONTH, -3)
+        return cal.timeInMillis
     }
 
     class Factory(

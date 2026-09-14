@@ -42,7 +42,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         dao.update(reminder.copy(dueAt = next, enabled = true, completed = false))
                         AlarmScheduler.schedule(context, reminder.copy(dueAt = next, completed = false))
                     } else {
-                        dao.setCompleted(reminderId, true)
+                        dao.setCompleted(reminderId, true, System.currentTimeMillis())
                         AlarmScheduler.cancel(context, reminderId)
                     }
                 }

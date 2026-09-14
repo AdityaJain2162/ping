@@ -53,8 +53,14 @@ interface ReminderDao {
     @Query("UPDATE reminders SET enabled = :enabled WHERE id = :id")
     suspend fun setEnabled(id: Long, enabled: Boolean)
 
-    @Query("UPDATE reminders SET completed = :completed WHERE id = :id")
-    suspend fun setCompleted(id: Long, completed: Boolean)
+    @Query("UPDATE reminders SET completed = :completed, completedAt = :completedAt WHERE id = :id")
+    suspend fun setCompleted(id: Long, completed: Boolean, completedAt: Long?)
+
+    @Query("SELECT * FROM reminders WHERE completed = 1 AND completedAt >= :since ORDER BY completedAt DESC")
+    fun observeHistory(since: Long): Flow<List<ReminderEntity>>
+
+    @Query("DELETE FROM reminders WHERE completed = 1 AND completedAt < :before")
+    suspend fun pruneOldCompleted(before: Long)
 
     @Query("UPDATE reminders SET lastFiredAt = :timestamp WHERE id = :id")
     suspend fun markFired(id: Long, timestamp: Long)

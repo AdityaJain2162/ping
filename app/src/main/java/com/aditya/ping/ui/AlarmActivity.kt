@@ -159,7 +159,7 @@ class AlarmActivity : ComponentActivity() {
             val reminder = dao.getById(reminderId) ?: return@launch
             // For non-recurring reminders, mark as completed
             if (RecurrenceCalculator.nextOccurrence(reminder, System.currentTimeMillis()) == null) {
-                dao.setCompleted(reminderId, true)
+                dao.setCompleted(reminderId, true, System.currentTimeMillis())
             }
         }
     }

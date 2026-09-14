@@ -9,6 +9,7 @@ object Routes {
     const val LISTS = "lists"
     const val CALENDAR = "calendar"
     const val AUTOMATIONS = "automations"
+    const val HISTORY = "history"
 
     fun edit(id: Long) = "edit/$id"
 }
