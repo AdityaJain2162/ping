@@ -1,0 +1,20 @@
+<resources>
+    <!-- Light theme seed colors (Material 3 baseline) -->
+    <color name="seed">#3B6FE0</color>
+    <color name="md_theme_light_primary">#3B6FE0</color>
+    <color name="md_theme_light_on_primary">#FFFFFF</color>
+    <color name="md_theme_light_surface">#FDFBFF</color>
+    <color name="md_theme_light_on_surface">#1A1B22</color>
+
+    <!-- Dark theme -->
+    <color name="md_theme_dark_primary">#AAC7FF</color>
+    <color name="md_theme_dark_on_primary">#002F6B</color>
+    <color name="md_theme_dark_surface">#12131A</color>
+    <color name="md_theme_dark_on_surface">#E3E2EA</color>
+
+    <!-- AMOLED (true black) -->
+    <color name="md_theme_amoled_primary">#AAC7FF</color>
+    <color name="md_theme_amoled_on_primary">#002F6B</color>
+    <color name="md_theme_amoled_surface">#000000</color>
+    <color name="md_theme_amoled_on_surface">#E3E2EA</color>
+</resources>

@@ -1,0 +1,55 @@
+<resources>
+    <string name="app_name">GeoNote</string>
+    <string name="app_tagline">Reminders that find you</string>
+
+    <!-- Home -->
+    <string name="home_title">Your Reminders</string>
+    <string name="home_empty">No reminders yet. Tap + to add one.</string>
+    <string name="home_add">Add reminder</string>
+    <string name="home_distance_away">%1$s away</string>
+
+    <!-- Add/Edit -->
+    <string name="add_title">New Reminder</string>
+    <string name="edit_title">Edit Reminder</string>
+    <string name="add_note_label">Note</string>
+    <string name="add_location_label">Location</string>
+    <string name="add_pick_current">Use current location</string>
+    <string name="add_pick_map">Pick on map</string>
+    <string name="add_trigger_label">Trigger</string>
+    <string name="add_trigger_arrive">On arrival</string>
+    <string name="add_trigger_leave">On departure</string>
+    <string name="add_radius_label">Radius (m)</string>
+    <string name="add_save">Save</string>
+    <string name="add_cancel">Cancel</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">Follow system</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_amoled">AMOLED black</string>
+    <string name="settings_amoled_toggle">AMOLED black</string>
+    <string name="settings_about">About</string>
+    <string name="settings_about_body">GeoNote — privacy-first location reminders. No account, no tracking, no cloud. Ads support development.</string>
+
+    <!-- Notifications -->
+    <string name="notif_channel_geofence">Location reminders</string>
+    <string name="notif_channel_geofence_desc">Alerts when you arrive at or leave a saved place.</string>
+    <string name="notif_channel_service">Active monitoring</string>
+    <string name="notif_channel_service_desc">Shown while GeoNote watches your location in the background.</string>
+    <string name="notif_service_title">GeoNote is watching</string>
+    <string name="notif_service_text">Monitoring %1$d reminder(s)</string>
+    <string name="notif_arrival_title">📍 You\'ve arrived</string>
+    <string name="notif_departure_title">🚪 You\'ve left</string>
+
+    <!-- Permissions -->
+    <string name="perm_location_rationale">GeoNote needs your location to trigger reminders when you arrive at or leave a place.</string>
+    <string name="perm_location_denied">Location permission is required for reminders to work.</string>
+    <string name="perm_background_rationale">Allow all the time so reminders fire even when GeoNote is closed.</string>
+    <string name="perm_notification_rationale">Allow notifications so you see reminders when they fire.</string>
+    <string name="perm_grant">Grant</string>
+
+    <!-- Ads -->
+    <string name="ad_banner_description">Advertisement</string>
+</resources>

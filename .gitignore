@@ -1,0 +1,28 @@
+# Built artifacts
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Gradle
+.gradle/
+build/
+app/build/
+.cxx/
+
+# Local config / IDE
+local.properties
+.idea/
+*.iml
+.DS_Store
+captures/
+
+# Keystore (never commit signing keys)
+*.jks
+*.keystore
+
+# Logs
+*.log
+
+# Kotlin
+*.kotlin_metadata
