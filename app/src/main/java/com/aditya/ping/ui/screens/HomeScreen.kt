@@ -221,17 +221,16 @@ private fun HeroStatsHeader(stats: HomeStats) {
             ) {
                 Canvas(modifier = Modifier.size(64.dp)) {
                     val strokeWidth = 6.dp.toPx()
+                    val arcSize = Size(size.width - strokeWidth, size.height - strokeWidth)
+                    val arcOffset = Offset(strokeWidth / 2, strokeWidth / 2)
                     // Background ring
                     drawArc(
                         color = Color.White.copy(alpha = 0.2f),
                         startAngle = -90f,
                         sweepAngle = 360f,
                         useCenter = false,
-                        topLeft = Offset(
-                            (size.width - strokeWidth) / 2,
-                            (size.height - strokeWidth) / 2,
-                        ),
-                        size = Size(size.width - strokeWidth, size.height - strokeWidth),
+                        topLeft = arcOffset,
+                        size = arcSize,
                         style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
                     )
                     // Progress ring
@@ -240,11 +239,8 @@ private fun HeroStatsHeader(stats: HomeStats) {
                         startAngle = -90f,
                         sweepAngle = 360f * animatedProgress,
                         useCenter = false,
-                        topLeft = Offset(
-                            (size.width - strokeWidth) / 2,
-                            (size.height - strokeWidth) / 2,
-                        ),
-                        size = Size(size.width - strokeWidth, size.height - strokeWidth),
+                        topLeft = arcOffset,
+                        size = arcSize,
                         style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
                     )
                 }
