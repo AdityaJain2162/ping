@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,9 +41,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -50,6 +55,8 @@ import com.aditya.ping.R
 import com.aditya.ping.data.ReminderRepository
 import com.aditya.ping.ui.components.BannerAd
 import com.aditya.ping.ui.components.ReminderCard
+import com.aditya.ping.ui.theme.PrimaryGradientEnd
+import com.aditya.ping.ui.theme.PrimaryGradientStart
 
 @Composable
 fun HomeScreen(
@@ -73,36 +80,60 @@ fun HomeScreen(
     Column(
         modifier = Modifier.fillMaxSize(),
     ) {
-            // Search bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = vm::onSearchQueryChange,
-                placeholder = { Text(stringResource(R.string.home_search)) },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            )
+        // Gradient hero header with stats
+        AnimatedVisibility(
+            visible = !isSearching && reminders.isNotEmpty(),
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically(),
+        ) {
+            HeroStatsHeader(stats = stats)
+        }
 
-            // Stats header (hidden when searching)
-            AnimatedVisibility(
-                visible = !isSearching && reminders.isNotEmpty(),
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically(),
+        // Search bar
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = vm::onSearchQueryChange,
+            placeholder = { Text(stringResource(R.string.home_search)) },
+            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+
+        if (reminders.isEmpty() && !isSearching) {
+            EmptyState(onAdd = onAdd)
+        } else if (isSearching) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 80.dp, start = 16.dp, end = 16.dp, top = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                StatsBar(stats = stats)
+                items(reminders, key = { it.id }) { r ->
+                    ReminderCard(
+                        reminder = r,
+                        onToggle = { vm.toggleEnabled(r.id, it) },
+                        onDelete = { vm.delete(r.id) },
+                        onClick = { onEdit(r.id) },
+                    )
+                }
+                item { BannerAd() }
             }
-
-            if (reminders.isEmpty() && !isSearching) {
-                EmptyState(onAdd = onAdd)
-            } else if (isSearching) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 80.dp, start = 16.dp, end = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(reminders, key = { it.id }) { r ->
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 80.dp, start = 16.dp, end = 16.dp, top = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                sections.forEach { section ->
+                    item(key = "header_${section.title}") {
+                        SectionHeader(section = section)
+                    }
+                    items(
+                        items = section.reminders,
+                        key = { "${section.title}_${it.id}" },
+                    ) { r ->
                         ReminderCard(
                             reminder = r,
                             onToggle = { vm.toggleEnabled(r.id, it) },
@@ -110,104 +141,91 @@ fun HomeScreen(
                             onClick = { onEdit(r.id) },
                         )
                     }
-                    item { BannerAd() }
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 80.dp, start = 16.dp, end = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    sections.forEach { section ->
-                        item(key = "header_${section.title}") {
-                            SectionHeader(section = section)
-                        }
-                        items(
-                            items = section.reminders,
-                            key = { "${section.title}_${it.id}" },
-                        ) { r ->
-                            ReminderCard(
-                                reminder = r,
-                                onToggle = { vm.toggleEnabled(r.id, it) },
-                                onDelete = { vm.delete(r.id) },
-                                onClick = { onEdit(r.id) },
-                            )
-                        }
-                    }
-                    item { BannerAd() }
-                }
+                item { BannerAd() }
             }
+        }
     }
 }
 
 @Composable
-private fun StatsBar(stats: HomeStats) {
-    Row(
+private fun HeroStatsHeader(stats: HomeStats) {
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(
+                Brush.linearGradient(
+                    listOf(PrimaryGradientStart, PrimaryGradientEnd),
+                ),
+            )
+            .padding(horizontal = 20.dp, vertical = 20.dp),
     ) {
-        StatChip(
-            icon = Icons.Filled.Bolt,
-            label = stringResource(R.string.home_stat_active),
-            count = stats.active,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.weight(1f),
-        )
-        StatChip(
-            icon = Icons.Filled.WarningAmber,
-            label = stringResource(R.string.home_stat_overdue),
-            count = stats.overdue,
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.weight(1f),
-        )
-        StatChip(
-            icon = Icons.Filled.CheckCircle,
-            label = stringResource(R.string.home_stat_completed),
-            count = stats.completed,
-            color = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier.weight(1f),
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            StatItem(
+                icon = Icons.Filled.Bolt,
+                count = stats.active,
+                label = stringResource(R.string.home_stat_active),
+            )
+            VerticalDivider()
+            StatItem(
+                icon = Icons.Filled.WarningAmber,
+                count = stats.overdue,
+                label = stringResource(R.string.home_stat_overdue),
+            )
+            VerticalDivider()
+            StatItem(
+                icon = Icons.Filled.CheckCircle,
+                count = stats.completed,
+                label = stringResource(R.string.home_stat_completed),
+            )
+        }
     }
 }
 
 @Composable
-private fun StatChip(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
+private fun StatItem(
+    icon: ImageVector,
     count: Int,
-    color: androidx.compose.ui.graphics.Color,
-    modifier: Modifier = Modifier,
+    label: String,
 ) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(color.copy(alpha = 0.12f))
-            .padding(horizontal = 10.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = color,
-            modifier = Modifier.size(18.dp),
+            tint = Color.White,
+            modifier = Modifier.size(22.dp),
         )
-        Column {
-            Text(
-                text = count.toString(),
-                style = MaterialTheme.typography.labelLarge,
-                color = color,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = count.toString(),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White.copy(alpha = 0.85f),
+        )
     }
+}
+
+@Composable
+private fun VerticalDivider() {
+    Box(
+        modifier = Modifier
+            .width(1.dp)
+            .height(40.dp)
+            .background(Color.White.copy(alpha = 0.2f)),
+    )
 }
 
 @Composable
@@ -215,7 +233,7 @@ private fun SectionHeader(section: ReminderSection) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 4.dp),
+            .padding(top = 12.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -228,11 +246,23 @@ private fun SectionHeader(section: ReminderSection) {
         Spacer(Modifier.width(8.dp))
         HorizontalDivider(modifier = Modifier.weight(1f))
         Spacer(Modifier.width(8.dp))
-        Text(
-            text = section.reminders.size.toString(),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .background(
+                    if (section.isOverdue) MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
+                    else MaterialTheme.colorScheme.surfaceContainerHighest,
+                )
+                .padding(horizontal = 8.dp, vertical = 2.dp),
+        ) {
+            Text(
+                text = section.reminders.size.toString(),
+                style = MaterialTheme.typography.labelMedium,
+                color = if (section.isOverdue) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
+            )
+        }
     }
 }
 
@@ -249,30 +279,40 @@ private fun EmptyState(onAdd: () -> Unit) {
         ) {
             Box(
                 modifier = Modifier
-                    .size(96.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .size(112.dp)
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(
+                        Brush.linearGradient(
+                            listOf(PrimaryGradientStart.copy(alpha = 0.15f), PrimaryGradientEnd.copy(alpha = 0.1f)),
+                        ),
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Filled.LocationOn,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(56.dp),
                 )
             }
             Text(
                 text = stringResource(R.string.home_empty_title),
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
                 text = stringResource(R.string.home_empty_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                textAlign = TextAlign.Center,
             )
-            Button(onClick = onAdd, modifier = Modifier.padding(top = 8.dp)) {
+            Button(
+                onClick = onAdd,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(),
+                modifier = Modifier.padding(top = 8.dp),
+            ) {
                 Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.home_empty_cta))

@@ -27,6 +27,8 @@ private val LightColorScheme = lightColorScheme(
     onSecondaryContainer = LightOnSecondaryContainer,
     tertiary = LightTertiary,
     onTertiary = LightOnTertiary,
+    tertiaryContainer = LightTertiaryContainer,
+    onTertiaryContainer = LightOnTertiaryContainer,
     background = LightBackground,
     onBackground = LightOnBackground,
     surface = LightSurface,
@@ -34,10 +36,17 @@ private val LightColorScheme = lightColorScheme(
     surfaceVariant = LightSurfaceVariant,
     onSurfaceVariant = LightOnSurfaceVariant,
     outline = LightOutline,
+    outlineVariant = LightOutlineVariant,
     error = LightError,
     onError = LightOnError,
+    errorContainer = LightErrorContainer,
+    onErrorContainer = LightOnErrorContainer,
     surfaceContainer = LightSurfaceContainer,
     surfaceContainerHigh = LightSurfaceContainerHigh,
+    surfaceContainerHighest = LightSurfaceContainerHighest,
+    inverseSurface = LightInverseSurface,
+    inverseOnSurface = LightInverseOnSurface,
+    inversePrimary = LightInversePrimary,
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -51,6 +60,8 @@ private val DarkColorScheme = darkColorScheme(
     onSecondaryContainer = DarkOnSecondaryContainer,
     tertiary = DarkTertiary,
     onTertiary = DarkOnTertiary,
+    tertiaryContainer = DarkTertiaryContainer,
+    onTertiaryContainer = DarkOnTertiaryContainer,
     background = DarkBackground,
     onBackground = DarkOnBackground,
     surface = DarkSurface,
@@ -58,10 +69,17 @@ private val DarkColorScheme = darkColorScheme(
     surfaceVariant = DarkSurfaceVariant,
     onSurfaceVariant = DarkOnSurfaceVariant,
     outline = DarkOutline,
+    outlineVariant = DarkOutlineVariant,
     error = DarkError,
     onError = DarkOnError,
+    errorContainer = DarkErrorContainer,
+    onErrorContainer = DarkOnErrorContainer,
     surfaceContainer = DarkSurfaceContainer,
     surfaceContainerHigh = DarkSurfaceContainerHigh,
+    surfaceContainerHighest = DarkSurfaceContainerHighest,
+    inverseSurface = DarkInverseSurface,
+    inverseOnSurface = DarkInverseOnSurface,
+    inversePrimary = DarkInversePrimary,
 )
 
 // AMOLED: same as dark but with true-black surfaces for OLED battery saving.
@@ -71,6 +89,7 @@ private val AmoledColorScheme = DarkColorScheme.copy(
     surfaceVariant = AmoledSurfaceVariant,
     surfaceContainer = AmoledSurfaceContainer,
     surfaceContainerHigh = AmoledSurfaceContainerHigh,
+    surfaceContainerHighest = AmoledSurfaceContainerHighest,
 )
 
 @Composable
@@ -86,7 +105,6 @@ fun PingTheme(
     }
 
     val context = LocalContext.current
-    // Dynamic Color is unavailable on AMOLED (can't produce true black) and on < API 31.
     val supportsDynamic = dynamicColor && themeMode != ThemeMode.AMOLED && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     val colorScheme = when {

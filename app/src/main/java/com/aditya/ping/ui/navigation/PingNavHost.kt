@@ -14,6 +14,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -89,7 +90,12 @@ fun PingNavHost() {
         },
         floatingActionButton = {
             if (currentRoute == Routes.HOME) {
-                FloatingActionButton(onClick = { nav.navigate(Routes.ADD) }) {
+                FloatingActionButton(
+                    onClick = { nav.navigate(Routes.ADD) },
+                    shape = MaterialTheme.shapes.extraLarge,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ) {
                     Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.home_add))
                 }
             }
