@@ -1,16 +1,47 @@
 package com.adityajain.geonote.ui.navigation
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.adityajain.geonote.ui.screens.AddEditScreen
+import com.adityajain.geonote.ui.screens.HomeScreen
+import com.adityajain.geonote.ui.screens.SettingsScreen
 
-// Placeholder nav host — replaced in the UI feature commit with real routes.
 @Composable
 fun GeoNoteNavHost() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("GeoNote — scaffold ready")
+    val nav = rememberNavController()
+
+    NavHost(navController = nav, startDestination = Routes.HOME) {
+        composable(Routes.HOME) {
+            HomeScreen(
+                onAdd = { nav.navigate(Routes.ADD) },
+                onEdit = { id -> nav.navigate(Routes.edit(id)) },
+                onSettings = { nav.navigate(Routes.SETTINGS) },
+            )
+        }
+        composable(Routes.ADD) {
+            AddEditScreen(
+                reminderId = 0L,
+                onSaved = { nav.popBackStack() },
+                onCancel = { nav.popBackStack() },
+            )
+        }
+        composable(
+            route = Routes.EDIT,
+            arguments = listOf(navArgument("id") { type = NavType.LongType }),
+        ) { entry ->
+            val id = entry.arguments?.getLong("id") ?: 0L
+            AddEditScreen(
+                reminderId = id,
+                onSaved = { nav.popBackStack() },
+                onCancel = { nav.popBackStack() },
+            )
+        }
+        composable(Routes.SETTINGS) {
+            SettingsScreen(onBack = { nav.popBackStack() })
+        }
     }
 }
