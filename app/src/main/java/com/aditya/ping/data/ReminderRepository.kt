@@ -6,6 +6,7 @@ class ReminderRepository(private val dao: ReminderDao) {
 
     fun observeAll(): Flow<List<ReminderEntity>> = dao.observeAll()
     fun observeEnabled(): Flow<List<ReminderEntity>> = dao.observeEnabled()
+    fun search(query: String): Flow<List<ReminderEntity>> = dao.search(query)
 
     suspend fun getById(id: Long): ReminderEntity? = dao.getById(id)
     suspend fun getEnabled(): List<ReminderEntity> = dao.getEnabled()

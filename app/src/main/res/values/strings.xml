@@ -36,6 +36,9 @@
     <string name="lists_name">List name</string>
     <string name="lists_add">Create list</string>
     <string name="lists_empty">No lists yet. Create one to organize your reminders.</string>
+
+    <!-- Search -->
+    <string name="home_search">Search reminders…</string>
     <string name="add_title_label">Title</string>
     <string name="add_pick_current">Use current location</string>
     <string name="add_pick_map">Pick on map</string>
