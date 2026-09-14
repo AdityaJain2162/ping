@@ -12,6 +12,7 @@ import com.aditya.ping.ui.AlarmActivity
 import com.aditya.ping.util.AlarmScheduler
 import com.aditya.ping.util.NagScheduler
 import com.aditya.ping.util.NotificationChannels
+import com.aditya.ping.util.QuietHoursManager
 import com.aditya.ping.util.RecurrenceCalculator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,20 +28,38 @@ class AlarmReceiver : BroadcastReceiver() {
         val note = intent.getStringExtra(EXTRA_NOTE).orEmpty()
         val isAlarm = intent.getBooleanExtra(EXTRA_IS_ALARM, false)
 
-        if (isAlarm) {
-            launchAlarmActivity(context, id, title, note)
-        } else {
-            showNotification(context, id.toInt(), title, note)
-        }
-
-        // Mark as fired + schedule next occurrence if recurring
+        // Check quiet hours — if active, defer non-alarm reminders to when quiet hours end
         CoroutineScope(Dispatchers.IO).launch {
+            val quietHours = QuietHoursManager(context)
+            val isAlarmReminder = isAlarm
+
+            if (!isAlarmReminder && quietHours.isCurrentlyQuiet()) {
+                // Defer to end of quiet hours
+                val deferTo = quietHours.nextQuietEndTimestamp()
+                if (deferTo != null) {
+                    val dao = PingDatabase.get(context).reminderDao()
+                    val reminder = dao.getById(id)
+                    if (reminder != null) {
+                        val updated = reminder.copy(dueAt = deferTo)
+                        dao.update(updated)
+                        AlarmScheduler.schedule(context, updated)
+                    }
+                    return@launch
+                }
+            }
+
+            // Fire immediately (alarm or non-quiet-hours)
+            if (isAlarmReminder) {
+                launchAlarmActivity(context, id, title, note)
+            } else {
+                showNotification(context, id.toInt(), title, note)
+            }
+
             val dao = PingDatabase.get(context).reminderDao()
             val reminder = dao.getById(id)
             if (reminder != null) {
                 dao.markFired(id, System.currentTimeMillis())
 
-                // Schedule next occurrence if recurring
                 val next = RecurrenceCalculator.nextOccurrence(reminder, System.currentTimeMillis())
                 if (next != null) {
                     val updated = reminder.copy(dueAt = next)
@@ -48,7 +67,6 @@ class AlarmReceiver : BroadcastReceiver() {
                     AlarmScheduler.schedule(context, updated)
                 }
 
-                // Start nagging if nag mode is enabled
                 if (reminder.nagMode) {
                     NagScheduler.scheduleNext(context, reminder)
                 }
