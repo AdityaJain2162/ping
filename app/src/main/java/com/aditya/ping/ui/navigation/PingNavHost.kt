@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.aditya.ping.ui.screens.AddEditScreen
+import com.aditya.ping.ui.screens.CalendarScreen
 import com.aditya.ping.ui.screens.HomeScreen
 import com.aditya.ping.ui.screens.ListsScreen
 import com.aditya.ping.ui.screens.SavedPlacesScreen
@@ -24,6 +25,7 @@ fun PingNavHost() {
                 onSettings = { nav.navigate(Routes.SETTINGS) },
                 onSavedPlaces = { nav.navigate(Routes.SAVED_PLACES) },
                 onLists = { nav.navigate(Routes.LISTS) },
+                onCalendar = { nav.navigate(Routes.CALENDAR) },
             )
         }
         composable(Routes.ADD) {
@@ -52,6 +54,12 @@ fun PingNavHost() {
         }
         composable(Routes.LISTS) {
             ListsScreen(onBack = { nav.popBackStack() })
+        }
+        composable(Routes.CALENDAR) {
+            CalendarScreen(
+                onBack = { nav.popBackStack() },
+                onEdit = { id -> nav.navigate(Routes.edit(id)) },
+            )
         }
     }
 }

@@ -51,6 +51,10 @@
     <string name="quiet_hours_start">Start</string>
     <string name="quiet_hours_end">End</string>
     <string name="quiet_hours_desc">Non-alarm reminders during quiet hours will be deferred until quiet hours end. Alarms always fire.</string>
+
+    <!-- Calendar -->
+    <string name="calendar_title">Calendar</string>
+    <string name="calendar_no_reminders">No reminders on this day.</string>
     <string name="add_title_label">Title</string>
     <string name="add_pick_current">Use current location</string>
     <string name="add_pick_map">Pick on map</string>
