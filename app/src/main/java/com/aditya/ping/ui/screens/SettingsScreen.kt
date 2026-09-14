@@ -38,6 +38,7 @@ import com.aditya.ping.R
 import com.aditya.ping.data.ThemeRepository
 import com.aditya.ping.domain.ThemeMode
 import com.aditya.ping.util.QuietHoursManager
+import com.aditya.ping.util.ImportExportManager
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -136,6 +137,52 @@ fun SettingsScreen(onBack: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+
+            Spacer(Modifier.height(16.dp))
+            Text(stringResource(R.string.data_title), style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                androidx.compose.material3.OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            val manager = ImportExportManager(context)
+                            val json = manager.export()
+                            val intent = android.content.Intent(android.content.Intent.ACTION_CREATE_DOCUMENT).apply {
+                                type = "application/json"
+                                putExtra(android.content.Intent.EXTRA_TITLE, "ping-backup-${System.currentTimeMillis()}.json")
+                            }
+                            // Note: For full file save, need ActivityResultLauncher.
+                            // For now, copy to clipboard as a quick export.
+                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Ping Backup", json))
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(stringResource(R.string.data_export))
+                }
+                androidx.compose.material3.OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            val clip = clipboard.primaryClip
+                            if (clip != null && clip.itemCount > 0) {
+                                val text = clip.getItemAt(0).coerceToText(context).toString()
+                                val manager = ImportExportManager(context)
+                                manager.import(text)
+                            }
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(stringResource(R.string.data_import))
+                }
+            }
+            Text(
+                stringResource(R.string.data_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
 
             Spacer(Modifier.height(16.dp))
             Text(stringResource(R.string.settings_about), style = MaterialTheme.typography.titleMedium)
