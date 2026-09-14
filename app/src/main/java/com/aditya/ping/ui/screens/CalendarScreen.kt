@@ -112,14 +112,20 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
         }.toSet()
     }
 
-    // Calendar grid calculations
-    val firstDayOfMonth = (displayedMonth.clone() as Calendar).apply {
-        set(Calendar.DAY_OF_MONTH, 1)
+    // Calendar grid calculations — recompute when month changes
+    val gridData = remember(displayedMonth) {
+        val fdom = (displayedMonth.clone() as Calendar).apply {
+            set(Calendar.DAY_OF_MONTH, 1)
+        }
+        val dim = displayedMonth.getActualMaximum(Calendar.DAY_OF_MONTH)
+        val fdow = (fdom.get(Calendar.DAY_OF_WEEK) - Calendar.getInstance().firstDayOfWeek + 7) % 7
+        val total = ((fdow + dim + 6) / 7) * 7
+        Triple(fdow, dim, total / 7)
     }
-    val daysInMonth = displayedMonth.getActualMaximum(Calendar.DAY_OF_MONTH)
-    val firstDayOfWeek = (firstDayOfMonth.get(Calendar.DAY_OF_WEEK) - Calendar.getInstance().firstDayOfWeek + 7) % 7
-    val totalCells = ((firstDayOfWeek + daysInMonth + 6) / 7) * 7
-    val rows = totalCells / 7
+    val firstDayOfWeek = gridData.first
+    val daysInMonth = gridData.second
+    val rows = gridData.third
+    val monthKey = displayedMonth.timeInMillis
 
     // NestedScroll: consume horizontal drags so the pager doesn't steal them
     // from SwipeToDismissBox inside the LazyColumn. Vertical scrolls pass
@@ -152,8 +158,9 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 IconButton(onClick = {
-                    displayedMonth.add(Calendar.MONTH, -1)
-                    displayedMonth = displayedMonth.clone() as Calendar
+                    val newMonth = displayedMonth.clone() as Calendar
+                    newMonth.add(Calendar.MONTH, -1)
+                    displayedMonth = newMonth
                 }) {
                     Icon(Icons.Filled.ChevronLeft, contentDescription = stringResource(R.string.calendar_prev_month))
                 }
@@ -162,8 +169,9 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
                     style = MaterialTheme.typography.titleMedium,
                 )
                 IconButton(onClick = {
-                    displayedMonth.add(Calendar.MONTH, 1)
-                    displayedMonth = displayedMonth.clone() as Calendar
+                    val newMonth = displayedMonth.clone() as Calendar
+                    newMonth.add(Calendar.MONTH, 1)
+                    displayedMonth = newMonth
                 }) {
                     Icon(Icons.Filled.ChevronRight, contentDescription = stringResource(R.string.calendar_next_month))
                 }
@@ -186,7 +194,7 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
         }
 
         // Calendar grid — each row as a separate item
-        items(rows, key = { row -> "gridRow_$row" }) { row ->
+        items(rows, key = { row -> "gridRow_${monthKey}_$row" }) { row ->
             Row(modifier = Modifier.fillMaxWidth()) {
                 for (col in 0 until 7) {
                     val cellIndex = row * 7 + col
