@@ -1,5 +1,6 @@
 package com.aditya.ping.ui.navigation
 
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -22,7 +23,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -49,6 +53,41 @@ fun PingNavHost() {
 
     val tabRoutes = listOf(Routes.HOME, Routes.SAVED_PLACES, Routes.CALENDAR, Routes.AUTOMATIONS)
     val isTabRoute = currentRoute in tabRoutes
+    val currentIndex = tabRoutes.indexOf(currentRoute)
+
+    fun navigateToTab(index: Int) {
+        if (index < 0 || index >= tabRoutes.size) return
+        val target = tabRoutes[index]
+        nav.navigate(target) {
+            popUpTo(Routes.HOME) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
+    val swipeModifier = if (isTabRoute) {
+        Modifier.pointerInput(currentRoute) {
+            val accumulated = mutableFloatStateOf(0f)
+            val threshold = 120f
+            detectHorizontalDragGestures(
+                onDragStart = { accumulated.floatValue = 0f },
+                onHorizontalDrag = { _, dragAmount ->
+                    accumulated.floatValue += dragAmount
+                },
+                onDragEnd = {
+                    val total = accumulated.floatValue
+                    when {
+                        total > threshold -> navigateToTab(currentIndex - 1)
+                        total < -threshold -> navigateToTab(currentIndex + 1)
+                    }
+                    accumulated.floatValue = 0f
+                },
+                onDragCancel = { accumulated.floatValue = 0f },
+            )
+        }
+    } else {
+        Modifier
+    }
 
     Scaffold(
         topBar = {
@@ -75,13 +114,7 @@ fun PingNavHost() {
                         val (icon, label) = tabInfo(route)
                         NavigationBarItem(
                             selected = currentRoute == route,
-                            onClick = {
-                                nav.navigate(route) {
-                                    popUpTo(Routes.HOME) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
+                            onClick = { navigateToTab(tabRoutes.indexOf(route)) },
                             icon = { Icon(icon, contentDescription = label) },
                             label = { Text(label) },
                         )
@@ -105,7 +138,10 @@ fun PingNavHost() {
         NavHost(
             navController = nav,
             startDestination = Routes.HOME,
-            modifier = Modifier.fillMaxSize().padding(inner),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(inner)
+                .then(swipeModifier),
         ) {
             composable(Routes.HOME) {
                 HomeScreen(
