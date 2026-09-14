@@ -195,4 +195,6 @@
     <string name="alarm_snooze">Snooze</string>
     <string name="alarm_snooze_for">Snooze for…</string>
     <string name="alarm_cancel">Cancel</string>
+    <string name="calendar_prev_month">Previous month</string>
+    <string name="calendar_next_month">Next month</string>
 </resources>
