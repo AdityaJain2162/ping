@@ -33,6 +33,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aditya.ping.R
 import com.aditya.ping.data.SavedPlaceRepository
+import com.aditya.ping.util.GeoCoderUtil
 import com.aditya.ping.util.LocationUtil
 import com.aditya.ping.util.PermissionUtil
 import kotlinx.coroutines.Dispatchers
@@ -67,6 +69,17 @@ fun SavedPlacesScreen(onBack: () -> Unit) {
     var newName by remember { mutableStateOf("") }
     var newRadius by remember { mutableStateOf("150") }
     var pendingLocation by remember { mutableStateOf<Triple<Double, Double, String>?>(null) }
+    var locationSearchQuery by remember { mutableStateOf("") }
+    var locationSearchResults by remember { mutableStateOf<List<com.aditya.ping.util.GeoResult>>(emptyList()) }
+    val geoCoder = remember { GeoCoderUtil(context) }
+
+    LaunchedEffect(locationSearchQuery) {
+        if (locationSearchQuery.length >= 3) {
+            locationSearchResults = geoCoder.search(locationSearchQuery)
+        } else {
+            locationSearchResults = emptyList()
+        }
+    }
 
     val locationLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -107,6 +120,29 @@ fun SavedPlacesScreen(onBack: () -> Unit) {
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+            // Location search
+            OutlinedTextField(
+                value = locationSearchQuery,
+                onValueChange = { locationSearchQuery = it },
+                label = { Text(stringResource(R.string.add_location_search)) },
+                leadingIcon = { Icon(Icons.Filled.LocationOn, contentDescription = null) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            locationSearchResults.forEach { result ->
+                OutlinedButton(
+                    onClick = {
+                        pendingLocation = Triple(result.lat, result.lng, result.label)
+                        locationSearchQuery = ""
+                        locationSearchResults = emptyList()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.size(8.dp))
+                    Text(result.label, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                }
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedButton(onClick = {
                     if (!PermissionUtil.hasFineLocation(context)) {
