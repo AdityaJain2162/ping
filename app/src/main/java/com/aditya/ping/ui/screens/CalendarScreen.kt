@@ -1,10 +1,24 @@
 package com.aditya.ping.ui.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -15,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -25,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -51,13 +68,17 @@ import java.util.Calendar
 import java.util.Locale
 
 @Composable
+@Suppress("UNUSED_PARAMETER")
 fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
     val context = LocalContext.current
     val repo = remember { ReminderRepository.from(context) }
     val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
 
     var selectedDate by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var displayedMonth by remember { mutableStateOf(Calendar.getInstance()) }
+    // Track navigation direction: -1 = prev month, +1 = next month, 0 = initial
+    var navDirection by remember { mutableIntStateOf(0) }
 
     // Query all reminders for the displayed month to show indicators
     val monthStartCal = (displayedMonth.clone() as Calendar).apply {
@@ -90,19 +111,20 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
     val monthFmt = remember { SimpleDateFormat("MMMM yyyy", Locale.getDefault()) }
     val dayFmt = remember { SimpleDateFormat("EEE, MMM d", Locale.getDefault()) }
 
-    // Locale-aware day headers
+    // Locale-aware day headers — use fresh calendar per iteration
     val dayHeaders = remember {
-        val cal = Calendar.getInstance()
-        val firstDay = cal.firstDayOfWeek
+        val firstDay = Calendar.getInstance().firstDayOfWeek
         val fmt = SimpleDateFormat("EEEEE", Locale.getDefault())
         (0 until 7).map { offset ->
             val day = (firstDay - Calendar.SUNDAY + offset + 7) % 7
+            val cal = Calendar.getInstance()
             cal.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY + day)
             fmt.format(cal.time).uppercase()
         }
     }
 
-    // Days with reminder indicator dots
+    // Days with reminder indicator dots — keyed on monthReminders so it
+    // recomputes when the month changes
     val daysWithReminders = remember(monthReminders) {
         monthReminders.mapNotNull { r ->
             r.dueAt?.let {
@@ -128,51 +150,58 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
     val monthKey = displayedMonth.timeInMillis
 
     // NestedScroll: consume horizontal drags so the pager doesn't steal them
-    // from SwipeToDismissBox inside the LazyColumn. Vertical scrolls pass
-    // through to the LazyColumn normally.
     val pagerScrollGuard = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: androidx.compose.ui.geometry.Offset, source: NestedScrollSource): androidx.compose.ui.geometry.Offset {
-                // Consume horizontal pre-scroll so the pager doesn't intercept
-                return if (available.x != 0f && available.y == 0f) {
-                    available
-                } else {
-                    androidx.compose.ui.geometry.Offset.Zero
-                }
+                return if (available.x != 0f && available.y == 0f) available
+                else androidx.compose.ui.geometry.Offset.Zero
             }
         }
     }
 
+    fun changeMonth(direction: Int) {
+        navDirection = direction
+        val newMonth = displayedMonth.clone() as Calendar
+        newMonth.add(Calendar.MONTH, direction)
+        displayedMonth = newMonth
+    }
+
     LazyColumn(
+        state = listState,
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(pagerScrollGuard),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(0.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
     ) {
-        // Month navigation
+        // Month navigation with animated title
         item(key = "monthNav") {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                IconButton(onClick = {
-                    val newMonth = displayedMonth.clone() as Calendar
-                    newMonth.add(Calendar.MONTH, -1)
-                    displayedMonth = newMonth
-                }) {
+                IconButton(onClick = { changeMonth(-1) }) {
                     Icon(Icons.Filled.ChevronLeft, contentDescription = stringResource(R.string.calendar_prev_month))
                 }
-                Text(
-                    monthFmt.format(displayedMonth.time),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                IconButton(onClick = {
-                    val newMonth = displayedMonth.clone() as Calendar
-                    newMonth.add(Calendar.MONTH, 1)
-                    displayedMonth = newMonth
-                }) {
+                AnimatedContent(
+                    targetState = monthFmt.format(displayedMonth.time),
+                    transitionSpec = {
+                        if (navDirection >= 0) {
+                            (slideInHorizontally(tween(300)) { it } + fadeIn(tween(300))) togetherWith
+                                (slideOutHorizontally(tween(300)) { -it } + fadeOut(tween(300)))
+                        } else {
+                            (slideInHorizontally(tween(300)) { -it } + fadeIn(tween(300))) togetherWith
+                                (slideOutHorizontally(tween(300)) { it } + fadeOut(tween(300)))
+                        }
+                    },
+                    label = "monthTitle",
+                ) { title ->
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
+                IconButton(onClick = { changeMonth(1) }) {
                     Icon(Icons.Filled.ChevronRight, contentDescription = stringResource(R.string.calendar_next_month))
                 }
             }
@@ -193,7 +222,7 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
             }
         }
 
-        // Calendar grid — each row as a separate item
+        // Calendar grid — each row as a separate item, keyed by month
         items(rows, key = { row -> "gridRow_${monthKey}_$row" }) { row ->
             Row(modifier = Modifier.fillMaxWidth()) {
                 for (col in 0 until 7) {
@@ -218,6 +247,32 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
                     }
                     val hasReminders = isCurrentMonth && day in daysWithReminders
 
+                    // Animated selection background
+                    val cellBg by animateColorAsState(
+                        targetValue = when {
+                            isSelected -> MaterialTheme.colorScheme.primary
+                            isToday -> MaterialTheme.colorScheme.primaryContainer
+                            else -> MaterialTheme.colorScheme.surface
+                        },
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        label = "cellBg",
+                    )
+                    val cellFg by animateColorAsState(
+                        targetValue = when {
+                            isSelected -> MaterialTheme.colorScheme.onPrimary
+                            isToday -> MaterialTheme.colorScheme.onPrimaryContainer
+                            else -> MaterialTheme.colorScheme.onSurface
+                        },
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        label = "cellFg",
+                    )
+                    // Animate dot scale
+                    val dotScale by animateFloatAsState(
+                        targetValue = if (hasReminders) 1f else 0f,
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        label = "dotScale",
+                    )
+
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -233,30 +288,22 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
                                     modifier = Modifier
                                         .size(36.dp)
                                         .clip(CircleShape)
-                                        .background(
-                                            if (isSelected) MaterialTheme.colorScheme.primary
-                                            else if (isToday) MaterialTheme.colorScheme.primaryContainer
-                                            else MaterialTheme.colorScheme.surface,
-                                        ),
+                                        .background(cellBg),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Text(
                                         text = day.toString(),
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                                        else if (isToday) MaterialTheme.colorScheme.onPrimaryContainer
-                                        else MaterialTheme.colorScheme.onSurface,
+                                        color = cellFg,
                                     )
                                 }
                                 Spacer(Modifier.height(2.dp))
                                 Box(
                                     modifier = Modifier
                                         .size(4.dp)
+                                        .scale(dotScale)
                                         .clip(CircleShape)
-                                        .background(
-                                            if (hasReminders) MaterialTheme.colorScheme.primary
-                                            else Color.Transparent,
-                                        ),
+                                        .background(MaterialTheme.colorScheme.primary),
                                 )
                             }
                         }
@@ -265,27 +312,38 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
             }
         }
 
-        // Selected day label
+        // Selected day label with crossfade
         item(key = "selectedDayLabel") {
             Spacer(Modifier.height(16.dp))
-            Text(
-                dayFmt.format(java.util.Date(selectedDate)),
-                style = MaterialTheme.typography.titleMedium,
-            )
+            AnimatedContent(
+                targetState = dayFmt.format(java.util.Date(selectedDate)),
+                transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(200)) },
+                label = "dayLabel",
+            ) { label ->
+                Text(
+                    label,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
             Spacer(Modifier.height(8.dp))
         }
 
         // Reminders for selected day
         if (dayReminders.isEmpty()) {
             item(key = "empty") {
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
-                    contentAlignment = Alignment.Center,
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn(tween(300)),
                 ) {
-                    Text(
-                        stringResource(R.string.calendar_no_reminders),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            stringResource(R.string.calendar_no_reminders),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         } else {

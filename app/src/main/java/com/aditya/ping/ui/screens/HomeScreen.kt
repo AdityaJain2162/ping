@@ -1,10 +1,13 @@
 package com.aditya.ping.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -47,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
@@ -157,7 +161,10 @@ fun HomeScreen(
                 ) {
                     sections.forEach { section ->
                         item(key = "header_${section.title}") {
-                            SectionHeader(section = section)
+                            SectionHeader(
+                                section = section,
+                                modifier = Modifier.animateItem(),
+                            )
                         }
                         items(
                             items = section.reminders,
@@ -172,6 +179,7 @@ fun HomeScreen(
                                 },
                                 onDelete = { vm.delete(r.id) },
                                 onClick = { onEdit(r.id) },
+                                modifier = Modifier.animateItem(),
                             )
                         }
                     }
@@ -318,9 +326,9 @@ private fun VerticalDivider() {
 }
 
 @Composable
-private fun SectionHeader(section: ReminderSection) {
+private fun SectionHeader(section: ReminderSection, modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(top = 12.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -357,6 +365,14 @@ private fun SectionHeader(section: ReminderSection) {
 
 @Composable
 private fun EmptyState(onAdd: () -> Unit) {
+    val iconScale by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow,
+        ),
+        label = "emptyIconScale",
+    )
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
@@ -369,6 +385,7 @@ private fun EmptyState(onAdd: () -> Unit) {
             Box(
                 modifier = Modifier
                     .size(112.dp)
+                    .scale(iconScale)
                     .clip(MaterialTheme.shapes.extraLarge)
                     .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
                 contentAlignment = Alignment.Center,
