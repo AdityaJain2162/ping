@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.aditya.ping.R
 import com.aditya.ping.data.PingDatabase
@@ -25,9 +26,13 @@ class AlarmReceiver : BroadcastReceiver() {
         val id = intent.getLongExtra(EXTRA_REMINDER_ID, -1L)
         if (id < 0) return
 
+        Log.d("AlarmReceiver", "Received alarm for reminder id=$id")
+
         val title = intent.getStringExtra(EXTRA_TITLE) ?: context.getString(R.string.notif_time_title)
         val note = intent.getStringExtra(EXTRA_NOTE).orEmpty()
         val isAlarm = intent.getBooleanExtra(EXTRA_IS_ALARM, false)
+
+        Log.d("AlarmReceiver", "title=$title isAlarm=$isAlarm")
 
         // Check quiet hours — if active, defer non-alarm reminders to when quiet hours end
         CoroutineScope(Dispatchers.IO).launch {

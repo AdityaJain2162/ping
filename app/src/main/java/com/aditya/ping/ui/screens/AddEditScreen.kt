@@ -366,6 +366,7 @@ fun AddEditScreen(
                 1 to stringResource(R.string.quick_action_call),
                 2 to stringResource(R.string.quick_action_whatsapp),
                 6 to stringResource(R.string.quick_action_sms),
+                7 to stringResource(R.string.quick_action_whatsapp_group),
                 3 to stringResource(R.string.quick_action_open_app),
                 4 to stringResource(R.string.quick_action_navigate),
                 5 to stringResource(R.string.quick_action_url),
@@ -398,6 +399,7 @@ fun AddEditScreen(
                                 1 -> stringResource(R.string.quick_action_call_hint)
                                 2 -> stringResource(R.string.quick_action_whatsapp_hint)
                                 6 -> stringResource(R.string.quick_action_sms_hint)
+                                7 -> stringResource(R.string.quick_action_whatsapp_group_hint)
                                 3 -> stringResource(R.string.quick_action_app_hint)
                                 5 -> stringResource(R.string.quick_action_url_hint)
                                 else -> ""

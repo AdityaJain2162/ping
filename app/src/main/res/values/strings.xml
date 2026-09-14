@@ -97,6 +97,8 @@
     <string name="quick_action_url_hint">URL (e.g., https://example.com)</string>
     <string name="quick_action_sms">SMS</string>
     <string name="quick_action_sms_hint">Phone number (e.g., +1234567890)</string>
+    <string name="quick_action_whatsapp_group">WhatsApp Group</string>
+    <string name="quick_action_whatsapp_group_hint">Group invite code (e.g., abc123XYZ)</string>
     <string name="quick_action_message_hint">Message body (optional)</string>
     <string name="add_location_search">Search address or place</string>
     <string name="add_ringtone_pick">Pick alarm tone</string>
