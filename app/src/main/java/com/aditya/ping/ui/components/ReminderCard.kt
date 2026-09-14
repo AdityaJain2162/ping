@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Login
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
@@ -56,7 +57,11 @@ fun ReminderCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = if (reminder.triggerType == 0) Icons.AutoMirrored.Outlined.Login else Icons.AutoMirrored.Outlined.Logout,
+                imageVector = when {
+                    reminder.isAlarm -> Icons.Filled.Alarm
+                    reminder.triggerType == 0 -> Icons.AutoMirrored.Outlined.Login
+                    else -> Icons.AutoMirrored.Outlined.Logout
+                },
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(28.dp),

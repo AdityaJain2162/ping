@@ -24,6 +24,10 @@ data class AddEditState(
     val triggerType: Int = 0,
     /** epoch millis for time trigger, null = no time trigger */
     val dueAt: Long? = null,
+    /** if true, fires as full-screen alarm instead of notification */
+    val isAlarm: Boolean = false,
+    /** snooze interval in minutes */
+    val snoozeMinutes: Int = 10,
     val isEdit: Boolean = false,
     val saving: Boolean = false,
     val saved: Boolean = false,
@@ -45,7 +49,8 @@ class AddEditViewModel(
                     id = r.id, title = r.title, note = r.note,
                     lat = r.lat, lng = r.lng, addressLabel = r.addressLabel,
                     radiusMeters = r.radiusMeters, triggerType = r.triggerType,
-                    dueAt = r.dueAt, isEdit = true,
+                    dueAt = r.dueAt, isAlarm = r.isAlarm, snoozeMinutes = r.snoozeMinutes,
+                    isEdit = true,
                 )
             }
         }
@@ -58,6 +63,8 @@ class AddEditViewModel(
     fun onRadiusChange(v: Int) = _state.update { it.copy(radiusMeters = v.coerceIn(50, 1000)) }
     fun onTriggerChange(v: Int) = _state.update { it.copy(triggerType = v) }
     fun onDueAtChange(v: Long?) = _state.update { it.copy(dueAt = v) }
+    fun onAlarmToggle(v: Boolean) = _state.update { it.copy(isAlarm = v) }
+    fun onSnoozeChange(v: Int) = _state.update { it.copy(snoozeMinutes = v.coerceIn(1, 60)) }
 
     fun save() = viewModelScope.launch {
         val s = _state.value
@@ -65,6 +72,8 @@ class AddEditViewModel(
         val hasLocation = s.lat != 0.0 || s.lng != 0.0
         val hasTime = s.dueAt != null
         if (!hasLocation && !hasTime) return@launch
+        // Alarm requires a time trigger
+        if (s.isAlarm && !hasTime) return@launch
 
         _state.update { it.copy(saving = true) }
         val entity = ReminderEntity(
@@ -76,6 +85,8 @@ class AddEditViewModel(
             radiusMeters = s.radiusMeters,
             triggerType = s.triggerType,
             dueAt = s.dueAt,
+            isAlarm = s.isAlarm,
+            snoozeMinutes = s.snoozeMinutes,
         )
         val id = if (s.isEdit) {
             repo.update(entity)
@@ -84,7 +95,6 @@ class AddEditViewModel(
             repo.insert(entity)
         }
 
-        // Schedule alarm if time trigger is set
         val saved = entity.copy(id = id)
         if (saved.dueAt != null && saved.enabled) {
             AlarmScheduler.schedule(appContext, saved)
