@@ -7,7 +7,7 @@ import com.aditya.ping.data.ReminderEntity
 
 /**
  * Executes a quick action associated with a reminder.
- * Types: 0=none, 1=call, 2=whatsapp, 3=open app, 4=navigate, 5=url, 6=sms
+ * Types: 0=none, 1=call, 2=whatsapp, 3=open app, 4=navigate, 5=url, 6=sms, 7=whatsapp_group
  */
 object QuickActionExecutor {
 
@@ -61,6 +61,14 @@ object QuickActionExecutor {
                 }
                 Intent(Intent.ACTION_SENDTO, Uri.parse(uri))
             }
+            // WhatsApp group (data = group invite code, e.g., "abc123XYZ")
+            7 -> {
+                val url = if (data.startsWith("https://chat.whatsapp.com/")) data
+                else "https://chat.whatsapp.com/$data"
+                Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                    `package` = "com.whatsapp"
+                }
+            }
             else -> null
         }
     }
@@ -72,6 +80,7 @@ object QuickActionExecutor {
         4 -> "Navigate"
         5 -> "Open URL"
         6 -> "SMS"
+        7 -> "WhatsApp Group"
         else -> ""
     }
 }
