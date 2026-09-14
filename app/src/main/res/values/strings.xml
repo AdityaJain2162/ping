@@ -103,6 +103,14 @@
     <string name="add_location_search">Search address or place</string>
     <string name="add_ringtone_pick">Pick alarm tone</string>
     <string name="add_ringtone_custom">Custom tone selected — tap to change</string>
+
+    <!-- Tabs -->
+    <string name="tab_home">Home</string>
+    <string name="tab_saved">Saved</string>
+    <string name="tab_calendar">Calendar</string>
+    <string name="tab_automations">Automations</string>
+    <string name="automations_title">Automations</string>
+    <string name="automations_subtitle">Trigger reminders and actions with NFC tags, WiFi, Bluetooth, and webhooks. Coming soon.</string>
     <string name="add_title_label">Title</string>
     <string name="add_pick_current">Use current location</string>
     <string name="add_pick_map">Pick on map</string>
