@@ -2,8 +2,10 @@ package com.aditya.ping.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,12 +13,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -49,6 +53,7 @@ fun HomeScreen(
     val repo = remember { ReminderRepository.from(context) }
     val vm: HomeViewModel = viewModel(factory = HomeViewModel.Factory(repo, appContext))
     val reminders by vm.reminders.collectAsStateWithLifecycle()
+    val searchQuery by vm.searchQuery.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -73,35 +78,51 @@ fun HomeScreen(
             }
         },
     ) { inner ->
-        if (reminders.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(inner),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    stringResource(R.string.home_empty),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    top = inner.calculateTopPadding(),
-                    bottom = inner.calculateBottomPadding() + 80.dp,
-                    start = 16.dp, end = 16.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(reminders, key = { it.id }) { r ->
-                    ReminderCard(
-                        reminder = r,
-                        onToggle = { vm.toggleEnabled(r.id, it) },
-                        onDelete = { vm.delete(r.id) },
-                        onClick = { onEdit(r.id) },
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(inner),
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = vm::onSearchQueryChange,
+                placeholder = { Text(stringResource(R.string.home_search)) },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+
+            if (reminders.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        stringResource(R.string.home_empty),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                item { BannerAd() }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        bottom = 80.dp,
+                        start = 16.dp, end = 16.dp,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(reminders, key = { it.id }) { r ->
+                        ReminderCard(
+                            reminder = r,
+                            onToggle = { vm.toggleEnabled(r.id, it) },
+                            onDelete = { vm.delete(r.id) },
+                            onClick = { onEdit(r.id) },
+                        )
+                    }
+                    item { BannerAd() }
+                }
             }
         }
     }
