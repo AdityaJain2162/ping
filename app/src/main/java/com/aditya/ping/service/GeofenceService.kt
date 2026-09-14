@@ -73,7 +73,7 @@ class GeofenceService : Service() {
     private fun startMonitoring() {
         if (monitoringJob?.isActive == true) return
         monitoringJob = scope.launch {
-            val reminders = repo.getEnabled()
+            val reminders = repo.getEnabled().filter { it.lat != 0.0 || it.lng != 0.0 }
             withContext(Dispatchers.Main) {
                 refreshForegroundNotification(reminders.size)
                 if (hasLocationPermission()) {
@@ -88,7 +88,7 @@ class GeofenceService : Service() {
 
     private fun checkReminders(location: Location) {
         scope.launch {
-            val reminders = repo.getEnabled()
+            val reminders = repo.getEnabled().filter { it.lat != 0.0 || it.lng != 0.0 }
             val now = System.currentTimeMillis()
             for (r in reminders) {
                 if (isInCooldown(r, now)) continue

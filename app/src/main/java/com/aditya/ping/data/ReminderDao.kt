@@ -26,13 +26,13 @@ interface ReminderDao {
     @Query("SELECT * FROM reminders WHERE dueAt IS NOT NULL AND dueAt >= :startOfDay AND dueAt < :endOfDay ORDER BY dueAt ASC")
     fun observeByDateRange(startOfDay: Long, endOfDay: Long): Flow<List<ReminderEntity>>
 
-    @Query("SELECT * FROM reminders WHERE enabled = 1 ORDER BY createdAt DESC")
+    @Query("SELECT * FROM reminders WHERE enabled = 1 AND completed = 0 ORDER BY createdAt DESC")
     fun observeEnabled(): Flow<List<ReminderEntity>>
 
-    @Query("SELECT * FROM reminders WHERE enabled = 1")
+    @Query("SELECT * FROM reminders WHERE enabled = 1 AND completed = 0")
     suspend fun getEnabled(): List<ReminderEntity>
 
-    @Query("SELECT * FROM reminders WHERE enabled = 1 AND dueAt IS NOT NULL")
+    @Query("SELECT * FROM reminders WHERE enabled = 1 AND completed = 0 AND dueAt IS NOT NULL")
     suspend fun getEnabledWithTimeTrigger(): List<ReminderEntity>
 
     @Query("SELECT * FROM reminders WHERE id = :id")

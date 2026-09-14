@@ -36,6 +36,10 @@ class AlarmReceiver : BroadcastReceiver() {
 
         // Check quiet hours — if active, defer non-alarm reminders to when quiet hours end
         CoroutineScope(Dispatchers.IO).launch {
+            val dao = PingDatabase.get(context).reminderDao()
+            val reminder = dao.getById(id)
+            if (reminder == null || reminder.completed) return@launch
+
             val quietHours = QuietHoursManager(context)
             val isAlarmReminder = isAlarm
 
@@ -43,40 +47,31 @@ class AlarmReceiver : BroadcastReceiver() {
                 // Defer to end of quiet hours
                 val deferTo = quietHours.nextQuietEndTimestamp()
                 if (deferTo != null) {
-                    val dao = PingDatabase.get(context).reminderDao()
-                    val reminder = dao.getById(id)
-                    if (reminder != null) {
-                        val updated = reminder.copy(dueAt = deferTo)
-                        dao.update(updated)
-                        AlarmScheduler.schedule(context, updated)
-                    }
+                    val updated = reminder.copy(dueAt = deferTo)
+                    dao.update(updated)
+                    AlarmScheduler.schedule(context, updated)
                     return@launch
                 }
             }
 
             // Fire immediately (alarm or non-quiet-hours)
-            val dao = PingDatabase.get(context).reminderDao()
-            val reminder = dao.getById(id)
-
             if (isAlarmReminder) {
                 launchAlarmActivity(context, id, title, note)
-            } else if (reminder != null) {
+            } else {
                 showNotification(context, id.toInt(), title, note, reminder)
             }
 
-            if (reminder != null) {
-                dao.markFired(id, System.currentTimeMillis())
+            dao.markFired(id, System.currentTimeMillis())
 
-                val next = RecurrenceCalculator.nextOccurrence(reminder, System.currentTimeMillis())
-                if (next != null) {
-                    val updated = reminder.copy(dueAt = next)
-                    dao.update(updated)
-                    AlarmScheduler.schedule(context, updated)
-                }
+            val next = RecurrenceCalculator.nextOccurrence(reminder, System.currentTimeMillis())
+            if (next != null) {
+                val updated = reminder.copy(dueAt = next, completed = false)
+                dao.update(updated)
+                AlarmScheduler.schedule(context, updated)
+            }
 
-                if (reminder.nagMode) {
-                    NagScheduler.scheduleNext(context, reminder)
-                }
+            if (reminder.nagMode) {
+                NagScheduler.scheduleNext(context, reminder)
             }
         }
     }

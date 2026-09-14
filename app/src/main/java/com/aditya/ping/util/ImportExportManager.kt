@@ -2,10 +2,12 @@ package com.aditya.ping.util
 
 import android.content.Context
 import com.aditya.ping.data.PingDatabase
+import com.aditya.ping.data.ReminderEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 
 /**
@@ -16,12 +18,12 @@ class ImportExportManager(private val context: Context) {
 
     suspend fun export(): String = withContext(Dispatchers.IO) {
         val db = PingDatabase.get(context)
-        val reminders = db.reminderDao().getEnabled()
+        val reminders = db.reminderDao().observeAll().first()
         val lists = db.reminderListDao().observeAll().first()
         val places = db.savedPlaceDao().observeAll().first()
 
         val backup = JSONObject()
-        backup.put("version", 1)
+        backup.put("version", 2)
 
         val remindersArray = JSONArray()
         reminders.forEach { r ->
@@ -33,8 +35,10 @@ class ImportExportManager(private val context: Context) {
                 put("addressLabel", r.addressLabel)
                 put("radiusMeters", r.radiusMeters)
                 put("triggerType", r.triggerType)
+                put("triggerMode", r.triggerMode)
                 put("createdAt", r.createdAt)
                 put("enabled", r.enabled)
+                put("completed", r.completed)
                 put("dueAt", r.dueAt ?: JSONObject.NULL)
                 put("isAlarm", r.isAlarm)
                 put("snoozeMinutes", r.snoozeMinutes)
@@ -44,6 +48,11 @@ class ImportExportManager(private val context: Context) {
                 put("nagMode", r.nagMode)
                 put("nagIntervalMinutes", r.nagIntervalMinutes)
                 put("listId", r.listId ?: JSONObject.NULL)
+                put("quickActionType", r.quickActionType)
+                put("quickActionData", r.quickActionData)
+                put("quickActionMessage", r.quickActionMessage)
+                put("ringtoneUri", r.ringtoneUri)
+                put("lastFiredAt", r.lastFiredAt)
             })
         }
         backup.put("reminders", remindersArray)
@@ -75,20 +84,26 @@ class ImportExportManager(private val context: Context) {
     }
 
     suspend fun import(jsonString: String): Int = withContext(Dispatchers.IO) {
-        val backup = JSONObject(jsonString)
+        val backup = try {
+            JSONObject(jsonString)
+        } catch (e: JSONException) {
+            return@withContext -1
+        }
         val db = PingDatabase.get(context)
 
-        // Import lists first (reminders reference list IDs, but we reset IDs on import)
+        // Import lists first, build name→newId mapping for reminder references
+        val listIdMap = mutableMapOf<Long, Long>()
         val listsArray = backup.optJSONArray("lists") ?: JSONArray()
         for (i in 0 until listsArray.length()) {
             val obj = listsArray.getJSONObject(i)
-            db.reminderListDao().insert(
-                com.aditya.ping.data.ReminderListEntity(
-                    name = obj.getString("name"),
-                    color = obj.optInt("color", 0),
-                    createdAt = obj.optLong("createdAt", System.currentTimeMillis()),
-                ),
+            val newList = com.aditya.ping.data.ReminderListEntity(
+                name = obj.getString("name"),
+                color = obj.optInt("color", 0),
+                createdAt = obj.optLong("createdAt", System.currentTimeMillis()),
             )
+            val newId = db.reminderListDao().insert(newList)
+            // Map old listId (index+1) to new ID
+            listIdMap[(i + 1).toLong()] = newId
         }
 
         // Import saved places
@@ -112,28 +127,44 @@ class ImportExportManager(private val context: Context) {
         var imported = 0
         for (i in 0 until remindersArray.length()) {
             val obj = remindersArray.getJSONObject(i)
-            db.reminderDao().insert(
-                com.aditya.ping.data.ReminderEntity(
-                    title = obj.getString("title"),
-                    note = obj.optString("note", ""),
-                    lat = obj.optDouble("lat", 0.0),
-                    lng = obj.optDouble("lng", 0.0),
-                    addressLabel = obj.optString("addressLabel", ""),
-                    radiusMeters = obj.optInt("radiusMeters", 150),
-                    triggerType = obj.optInt("triggerType", 0),
-                    createdAt = obj.optLong("createdAt", System.currentTimeMillis()),
-                    enabled = obj.optBoolean("enabled", true),
-                    dueAt = if (obj.isNull("dueAt")) null else obj.optLong("dueAt", 0L).takeIf { it > 0 },
-                    isAlarm = obj.optBoolean("isAlarm", false),
-                    snoozeMinutes = obj.optInt("snoozeMinutes", 10),
-                    recurrenceType = obj.optInt("recurrenceType", 0),
-                    recurrenceInterval = obj.optInt("recurrenceInterval", 1),
-                    recurrenceEndDate = if (obj.isNull("recurrenceEndDate")) null else obj.optLong("recurrenceEndDate", 0L).takeIf { it > 0 },
-                    nagMode = obj.optBoolean("nagMode", false),
-                    nagIntervalMinutes = obj.optInt("nagIntervalMinutes", 15),
-                    listId = if (obj.isNull("listId")) null else obj.optLong("listId", 0L).takeIf { it > 0 },
-                ),
+            val oldListId = if (obj.isNull("listId")) null else obj.optLong("listId", 0L).takeIf { it > 0 }
+            val newListId = oldListId?.let { listIdMap[it] }
+
+            val reminder = ReminderEntity(
+                title = obj.getString("title"),
+                note = obj.optString("note", ""),
+                lat = obj.optDouble("lat", 0.0),
+                lng = obj.optDouble("lng", 0.0),
+                addressLabel = obj.optString("addressLabel", ""),
+                radiusMeters = obj.optInt("radiusMeters", 150),
+                triggerType = obj.optInt("triggerType", 0),
+                triggerMode = obj.optInt("triggerMode", 0),
+                createdAt = obj.optLong("createdAt", System.currentTimeMillis()),
+                enabled = obj.optBoolean("enabled", true),
+                completed = obj.optBoolean("completed", false),
+                dueAt = if (obj.isNull("dueAt")) null else obj.optLong("dueAt", 0L).takeIf { it > 0 },
+                isAlarm = obj.optBoolean("isAlarm", false),
+                snoozeMinutes = obj.optInt("snoozeMinutes", 10),
+                recurrenceType = obj.optInt("recurrenceType", 0),
+                recurrenceInterval = obj.optInt("recurrenceInterval", 1),
+                recurrenceEndDate = if (obj.isNull("recurrenceEndDate")) null else obj.optLong("recurrenceEndDate", 0L).takeIf { it > 0 },
+                nagMode = obj.optBoolean("nagMode", false),
+                nagIntervalMinutes = obj.optInt("nagIntervalMinutes", 15),
+                listId = newListId,
+                quickActionType = obj.optInt("quickActionType", 0),
+                quickActionData = obj.optString("quickActionData", ""),
+                quickActionMessage = obj.optString("quickActionMessage", ""),
+                ringtoneUri = obj.optString("ringtoneUri", ""),
+                lastFiredAt = obj.optLong("lastFiredAt", 0L),
             )
+            val newReminderId = db.reminderDao().insert(reminder)
+
+            // Re-schedule alarm if the reminder has a future dueAt and is active
+            if (reminder.enabled && !reminder.completed && reminder.dueAt != null &&
+                reminder.dueAt > System.currentTimeMillis()
+            ) {
+                AlarmScheduler.schedule(context, reminder.copy(id = newReminderId))
+            }
             imported++
         }
         imported

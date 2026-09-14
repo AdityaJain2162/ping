@@ -26,7 +26,7 @@ object NagScheduler {
     }
 
     fun scheduleNext(context: Context, reminder: ReminderEntity) {
-        if (!reminder.nagMode || !reminder.enabled) return
+        if (!reminder.nagMode || !reminder.enabled || reminder.completed) return
 
         val intervalMillis = reminder.nagIntervalMinutes * 60_000L
         val triggerAt = System.currentTimeMillis() + intervalMillis

@@ -36,13 +36,13 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
             when (action) {
                 ACTION_DONE -> {
-                    // Mark disabled (done) + schedule next recurrence if recurring
+                    // Mark completed + schedule next recurrence if recurring
                     val next = RecurrenceCalculator.nextOccurrence(reminder, System.currentTimeMillis())
                     if (next != null) {
-                        dao.update(reminder.copy(dueAt = next, enabled = true))
-                        AlarmScheduler.schedule(context, reminder.copy(dueAt = next))
+                        dao.update(reminder.copy(dueAt = next, enabled = true, completed = false))
+                        AlarmScheduler.schedule(context, reminder.copy(dueAt = next, completed = false))
                     } else {
-                        dao.setEnabled(reminderId, false)
+                        dao.setCompleted(reminderId, true)
                         AlarmScheduler.cancel(context, reminderId)
                     }
                 }
