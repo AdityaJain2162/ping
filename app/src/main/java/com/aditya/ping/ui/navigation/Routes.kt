@@ -7,6 +7,7 @@ object Routes {
     const val SETTINGS = "settings"
     const val SAVED_PLACES = "saved_places"
     const val LISTS = "lists"
+    const val CALENDAR = "calendar"
 
     fun edit(id: Long) = "edit/$id"
 }

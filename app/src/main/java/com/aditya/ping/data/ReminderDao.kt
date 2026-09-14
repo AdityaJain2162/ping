@@ -23,6 +23,9 @@ interface ReminderDao {
     @Query("SELECT * FROM reminders WHERE title LIKE '%' || :query || '%' OR note LIKE '%' || :query || '%' OR addressLabel LIKE '%' || :query || '%' ORDER BY createdAt DESC")
     fun search(query: String): Flow<List<ReminderEntity>>
 
+    @Query("SELECT * FROM reminders WHERE dueAt IS NOT NULL AND dueAt >= :startOfDay AND dueAt < :endOfDay ORDER BY dueAt ASC")
+    fun observeByDateRange(startOfDay: Long, endOfDay: Long): Flow<List<ReminderEntity>>
+
     @Query("SELECT * FROM reminders WHERE enabled = 1 ORDER BY createdAt DESC")
     fun observeEnabled(): Flow<List<ReminderEntity>>
 
