@@ -1,10 +1,12 @@
 package com.aditya.ping.ui.screens
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.aditya.ping.data.ReminderEntity
 import com.aditya.ping.data.ReminderRepository
+import com.aditya.ping.util.AlarmScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,12 +22,17 @@ data class AddEditState(
     val addressLabel: String = "",
     val radiusMeters: Int = 150,
     val triggerType: Int = 0,
+    /** epoch millis for time trigger, null = no time trigger */
+    val dueAt: Long? = null,
     val isEdit: Boolean = false,
     val saving: Boolean = false,
     val saved: Boolean = false,
 )
 
-class AddEditViewModel(private val repo: ReminderRepository) : ViewModel() {
+class AddEditViewModel(
+    private val repo: ReminderRepository,
+    private val appContext: Context,
+) : ViewModel() {
 
     private val _state = MutableStateFlow(AddEditState())
     val state: StateFlow<AddEditState> = _state.asStateFlow()
@@ -38,7 +45,7 @@ class AddEditViewModel(private val repo: ReminderRepository) : ViewModel() {
                     id = r.id, title = r.title, note = r.note,
                     lat = r.lat, lng = r.lng, addressLabel = r.addressLabel,
                     radiusMeters = r.radiusMeters, triggerType = r.triggerType,
-                    isEdit = true,
+                    dueAt = r.dueAt, isEdit = true,
                 )
             }
         }
@@ -50,10 +57,15 @@ class AddEditViewModel(private val repo: ReminderRepository) : ViewModel() {
         _state.update { it.copy(lat = lat, lng = lng, addressLabel = label) }
     fun onRadiusChange(v: Int) = _state.update { it.copy(radiusMeters = v.coerceIn(50, 1000)) }
     fun onTriggerChange(v: Int) = _state.update { it.copy(triggerType = v) }
+    fun onDueAtChange(v: Long?) = _state.update { it.copy(dueAt = v) }
 
     fun save() = viewModelScope.launch {
         val s = _state.value
-        if (s.title.isBlank() || (s.lat == 0.0 && s.lng == 0.0)) return@launch
+        if (s.title.isBlank()) return@launch
+        val hasLocation = s.lat != 0.0 || s.lng != 0.0
+        val hasTime = s.dueAt != null
+        if (!hasLocation && !hasTime) return@launch
+
         _state.update { it.copy(saving = true) }
         val entity = ReminderEntity(
             id = if (s.isEdit) s.id else 0,
@@ -63,13 +75,32 @@ class AddEditViewModel(private val repo: ReminderRepository) : ViewModel() {
             addressLabel = s.addressLabel,
             radiusMeters = s.radiusMeters,
             triggerType = s.triggerType,
+            dueAt = s.dueAt,
         )
-        if (s.isEdit) repo.update(entity) else repo.insert(entity)
+        val id = if (s.isEdit) {
+            repo.update(entity)
+            s.id
+        } else {
+            repo.insert(entity)
+        }
+
+        // Schedule alarm if time trigger is set
+        val saved = entity.copy(id = id)
+        if (saved.dueAt != null && saved.enabled) {
+            AlarmScheduler.schedule(appContext, saved)
+        } else if (s.isEdit) {
+            AlarmScheduler.cancel(appContext, s.id)
+        }
+
         _state.update { it.copy(saving = false, saved = true) }
     }
 
-    class Factory(private val repo: ReminderRepository) : ViewModelProvider.Factory {
+    class Factory(
+        private val repo: ReminderRepository,
+        private val appContext: Context,
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T = AddEditViewModel(repo) as T
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            AddEditViewModel(repo, appContext) as T
     }
 }

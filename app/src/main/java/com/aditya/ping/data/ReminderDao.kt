@@ -20,6 +20,9 @@ interface ReminderDao {
     @Query("SELECT * FROM reminders WHERE enabled = 1")
     suspend fun getEnabled(): List<ReminderEntity>
 
+    @Query("SELECT * FROM reminders WHERE enabled = 1 AND dueAt IS NOT NULL")
+    suspend fun getEnabledWithTimeTrigger(): List<ReminderEntity>
+
     @Query("SELECT * FROM reminders WHERE id = :id")
     suspend fun getById(id: Long): ReminderEntity?
 

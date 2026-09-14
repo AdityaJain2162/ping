@@ -15,6 +15,8 @@ data class ReminderEntity(
     val radiusMeters: Int = 150,
     /** 0 = on arrival, 1 = on departure */
     val triggerType: Int = 0,
+    /** epoch millis when time-based reminder fires, null = no time trigger */
+    val dueAt: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val enabled: Boolean = true,
     /** last fired epoch millis (cooldown) */

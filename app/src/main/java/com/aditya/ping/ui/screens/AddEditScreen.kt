@@ -1,6 +1,8 @@
 package com.aditya.ping.ui.screens
 
 import android.Manifest
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -26,6 +29,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,11 +46,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aditya.ping.R
 import com.aditya.ping.data.ReminderRepository
+import com.aditya.ping.util.AlarmScheduler
 import com.aditya.ping.util.LocationUtil
 import com.aditya.ping.util.PermissionUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,8 +65,9 @@ fun AddEditScreen(
     onCancel: () -> Unit,
 ) {
     val context = LocalContext.current
+    val appContext = context.applicationContext
     val repo = remember { ReminderRepository.from(context) }
-    val vm: AddEditViewModel = viewModel(factory = AddEditViewModel.Factory(repo))
+    val vm: AddEditViewModel = viewModel(factory = AddEditViewModel.Factory(repo, appContext))
     val state by vm.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
@@ -75,6 +85,8 @@ fun AddEditScreen(
             }
         }
     }
+
+    val dateFmt = remember { SimpleDateFormat("EEE, MMM d 'at' h:mm a", Locale.getDefault()) }
 
     Scaffold(
         topBar = {
@@ -96,7 +108,7 @@ fun AddEditScreen(
             OutlinedTextField(
                 value = state.title,
                 onValueChange = vm::onTitleChange,
-                label = { Text(stringResource(R.string.add_note_label)) },
+                label = { Text(stringResource(R.string.add_title_label)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -107,6 +119,28 @@ fun AddEditScreen(
                 modifier = Modifier.fillMaxWidth().height(120.dp),
             )
 
+            // --- Time trigger section ---
+            Text(stringResource(R.string.add_time_label), style = MaterialTheme.typography.labelLarge)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.size(8.dp))
+                if (state.dueAt != null) {
+                    Text(
+                        dateFmt.format(Date(state.dueAt!!)),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { vm.onDueAtChange(null) }) {
+                        Text(stringResource(R.string.add_time_clear))
+                    }
+                } else {
+                    OutlinedButton(onClick = { showDateTimePicker(context, vm::onDueAtChange) }) {
+                        Text(stringResource(R.string.add_time_pick))
+                    }
+                }
+            }
+
+            // --- Location trigger section ---
             Text(stringResource(R.string.add_location_label), style = MaterialTheme.typography.labelLarge)
             OutlinedButton(onClick = {
                 if (!PermissionUtil.hasFineLocation(context)) {
@@ -166,4 +200,21 @@ fun AddEditScreen(
             }
         }
     }
+}
+
+private fun showDateTimePicker(
+    context: android.content.Context,
+    onPicked: (Long) -> Unit,
+) {
+    val cal = Calendar.getInstance()
+    DatePickerDialog(context, { _, year, month, day ->
+        cal.set(year, month, day)
+        TimePickerDialog(context, { _, hour, minute ->
+            cal.set(Calendar.HOUR_OF_DAY, hour)
+            cal.set(Calendar.MINUTE, minute)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            onPicked(cal.timeInMillis)
+        }, cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), false).show()
+    }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
 }

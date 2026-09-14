@@ -13,6 +13,10 @@
     <string name="edit_title">Edit Reminder</string>
     <string name="add_note_label">Note</string>
     <string name="add_location_label">Location</string>
+    <string name="add_time_label">Time (optional)</string>
+    <string name="add_time_pick">Pick date and time</string>
+    <string name="add_time_clear">Clear</string>
+    <string name="add_title_label">Title</string>
     <string name="add_pick_current">Use current location</string>
     <string name="add_pick_map">Pick on map</string>
     <string name="add_trigger_label">Trigger</string>
@@ -42,6 +46,7 @@
     <string name="notif_service_text">Monitoring %1$d reminder(s)</string>
     <string name="notif_arrival_title">📍 You\'ve arrived</string>
     <string name="notif_departure_title">🚪 You\'ve left</string>
+    <string name="notif_time_title">⏰ Reminder</string>
 
     <!-- Permissions -->
     <string name="perm_location_rationale">Ping needs your location to trigger reminders when you arrive at or leave a place.</string>

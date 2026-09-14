@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.outlined.Login
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -21,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -28,6 +30,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aditya.ping.R
 import com.aditya.ping.data.ReminderEntity
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ReminderCard(
@@ -37,6 +42,10 @@ fun ReminderCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val timeFmt = remember(reminder.dueAt) {
+        SimpleDateFormat("EEE, MMM d 'at' h:mm a", Locale.getDefault())
+    }
+
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
@@ -61,24 +70,49 @@ fun ReminderCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(2.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.LocationOn,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(14.dp),
-                    )
-                    Spacer(Modifier.size(4.dp))
-                    Text(
-                        text = reminder.addressLabel.ifBlank {
-                            "%.4f, %.4f".format(reminder.lat, reminder.lng)
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+
+                // Location row (only if location is set)
+                if (reminder.lat != 0.0 || reminder.lng != 0.0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.LocationOn,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Spacer(Modifier.size(4.dp))
+                        Text(
+                            text = reminder.addressLabel.ifBlank {
+                                "%.4f, %.4f".format(reminder.lat, reminder.lng)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
+
+                // Time row (only if dueAt is set)
+                reminder.dueAt?.let { due ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.Schedule,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Spacer(Modifier.size(4.dp))
+                        Text(
+                            text = timeFmt.format(Date(due)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+
                 if (reminder.note.isNotBlank()) {
                     Spacer(Modifier.height(2.dp))
                     Text(
@@ -89,12 +123,14 @@ fun ReminderCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.home_distance_away, "${reminder.radiusMeters} m"),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (reminder.lat != 0.0 || reminder.lng != 0.0) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.home_distance_away, "${reminder.radiusMeters} m"),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             Spacer(Modifier.size(8.dp))
             Switch(checked = reminder.enabled, onCheckedChange = onToggle)
@@ -104,3 +140,4 @@ fun ReminderCard(
         }
     }
 }
+
