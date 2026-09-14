@@ -9,6 +9,7 @@ class ReminderRepository(private val dao: ReminderDao) {
 
     suspend fun getById(id: Long): ReminderEntity? = dao.getById(id)
     suspend fun getEnabled(): List<ReminderEntity> = dao.getEnabled()
+    suspend fun getEnabledWithTimeTrigger(): List<ReminderEntity> = dao.getEnabledWithTimeTrigger()
 
     suspend fun insert(reminder: ReminderEntity): Long = dao.insert(reminder)
     suspend fun update(reminder: ReminderEntity) = dao.update(reminder)

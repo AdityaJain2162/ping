@@ -41,8 +41,9 @@ fun HomeScreen(
     onSettings: () -> Unit,
 ) {
     val context = LocalContext.current
+    val appContext = context.applicationContext
     val repo = remember { ReminderRepository.from(context) }
-    val vm: HomeViewModel = viewModel(factory = HomeViewModel.Factory(repo))
+    val vm: HomeViewModel = viewModel(factory = HomeViewModel.Factory(repo, appContext))
     val reminders by vm.reminders.collectAsStateWithLifecycle()
 
     Scaffold(
