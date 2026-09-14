@@ -44,6 +44,15 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ui.AlarmActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.Ping" />
+
         <service
             android:name=".service.GeofenceService"
             android:exported="false"

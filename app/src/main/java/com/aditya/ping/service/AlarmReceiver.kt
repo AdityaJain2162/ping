@@ -7,6 +7,7 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.aditya.ping.R
 import com.aditya.ping.data.PingDatabase
+import com.aditya.ping.ui.AlarmActivity
 import com.aditya.ping.util.NotificationChannels
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,13 +21,27 @@ class AlarmReceiver : BroadcastReceiver() {
 
         val title = intent.getStringExtra(EXTRA_TITLE) ?: context.getString(R.string.notif_time_title)
         val note = intent.getStringExtra(EXTRA_NOTE).orEmpty()
+        val isAlarm = intent.getBooleanExtra(EXTRA_IS_ALARM, false)
 
-        showNotification(context, id.toInt(), title, note)
+        if (isAlarm) {
+            launchAlarmActivity(context, id, title, note)
+        } else {
+            showNotification(context, id.toInt(), title, note)
+        }
 
-        // Mark as fired in DB (cooldown tracking)
         CoroutineScope(Dispatchers.IO).launch {
             PingDatabase.get(context).reminderDao().markFired(id, System.currentTimeMillis())
         }
+    }
+
+    private fun launchAlarmActivity(context: Context, id: Long, title: String, note: String) {
+        val intent = Intent(context, AlarmActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            putExtra(AlarmActivity.EXTRA_REMINDER_ID, id)
+            putExtra(AlarmActivity.EXTRA_TITLE, title)
+            putExtra(AlarmActivity.EXTRA_NOTE, note)
+        }
+        context.startActivity(intent)
     }
 
     private fun showNotification(context: Context, notifId: Int, title: String, note: String) {
@@ -46,5 +61,6 @@ class AlarmReceiver : BroadcastReceiver() {
         const val EXTRA_REMINDER_ID = "reminder_id"
         const val EXTRA_TITLE = "title"
         const val EXTRA_NOTE = "note"
+        const val EXTRA_IS_ALARM = "is_alarm"
     }
 }

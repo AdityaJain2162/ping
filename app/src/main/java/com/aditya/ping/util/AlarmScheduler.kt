@@ -19,6 +19,7 @@ object AlarmScheduler {
             putExtra(AlarmReceiver.EXTRA_REMINDER_ID, reminder.id)
             putExtra(AlarmReceiver.EXTRA_TITLE, reminder.title)
             putExtra(AlarmReceiver.EXTRA_NOTE, reminder.note)
+            putExtra(AlarmReceiver.EXTRA_IS_ALARM, reminder.isAlarm)
         }
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         return PendingIntent.getBroadcast(context, reminder.id.toInt(), intent, flags)

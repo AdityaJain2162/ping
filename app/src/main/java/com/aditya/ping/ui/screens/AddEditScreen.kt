@@ -140,6 +140,31 @@ fun AddEditScreen(
                 }
             }
 
+            // --- Alarm toggle (only shown when time is set) ---
+            if (state.dueAt != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.add_alarm_toggle), style = MaterialTheme.typography.bodyMedium)
+                    androidx.compose.material3.Switch(
+                        checked = state.isAlarm,
+                        onCheckedChange = vm::onAlarmToggle,
+                    )
+                }
+                if (state.isAlarm) {
+                    OutlinedTextField(
+                        value = state.snoozeMinutes.toString(),
+                        onValueChange = { v -> v.toIntOrNull()?.let { vm.onSnoozeChange(it) } },
+                        label = { Text(stringResource(R.string.add_snooze_label)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
             // --- Location trigger section ---
             Text(stringResource(R.string.add_location_label), style = MaterialTheme.typography.labelLarge)
             OutlinedButton(onClick = {
