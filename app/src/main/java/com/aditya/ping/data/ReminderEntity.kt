@@ -45,6 +45,8 @@ data class ReminderEntity(
     val ringtoneUri: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val enabled: Boolean = true,
+    /** whether the user has marked this reminder as done (separate from enabled) */
+    val completed: Boolean = false,
     /** last fired epoch millis (cooldown) */
     val lastFiredAt: Long = 0L,
 )

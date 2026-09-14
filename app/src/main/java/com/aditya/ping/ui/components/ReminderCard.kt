@@ -3,6 +3,7 @@ package com.aditya.ping.ui.components
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,7 +59,8 @@ import java.util.Locale
 @Composable
 fun ReminderCard(
     reminder: ReminderEntity,
-    onToggle: (Boolean) -> Unit,
+    onToggleEnabled: (Boolean) -> Unit,
+    onToggleCompleted: (Boolean) -> Unit,
     onDelete: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -67,8 +69,8 @@ fun ReminderCard(
     val timeFmt = remember(reminder.dueAt) {
         SimpleDateFormat("EEE, MMM d 'at' h:mm a", Locale.getDefault())
     }
-    val isOverdue = reminder.enabled && reminder.dueAt != null && reminder.dueAt < System.currentTimeMillis()
-    val isDone = !reminder.enabled
+    val isOverdue = reminder.enabled && !reminder.completed && reminder.dueAt != null && reminder.dueAt < System.currentTimeMillis()
+    val isDone = reminder.completed
 
     val accentColor = when {
         isOverdue -> MaterialTheme.colorScheme.error
@@ -89,7 +91,7 @@ fun ReminderCard(
                 SwipeToDismissBoxValue.StartToEnd -> {
                     // Swipe right = toggle done
                     HapticUtil.complete(context)
-                    onToggle(!reminder.enabled)
+                    onToggleCompleted(!reminder.completed)
                     false // Don't dismiss — just toggle
                 }
                 SwipeToDismissBoxValue.EndToStart -> {
@@ -296,9 +298,37 @@ fun ReminderCard(
                     }
                 }
 
+                // Checkmark button for done
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            if (isDone) MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)
+                            else Color.Transparent,
+                        )
+                        .clickable {
+                            HapticUtil.complete(context)
+                            onToggleCompleted(!reminder.completed)
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = if (isDone) Icons.Filled.CheckCircle
+                        else Icons.Filled.Check,
+                        contentDescription = "Mark done",
+                        tint = if (isDone) MaterialTheme.colorScheme.secondary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+
+                Spacer(Modifier.width(4.dp))
+
+                // Switch for enabled/disabled (alarm active or not)
                 Switch(checked = reminder.enabled, onCheckedChange = {
                     HapticUtil.toggle(context)
-                    onToggle(it)
+                    onToggleEnabled(it)
                 })
             }
         }

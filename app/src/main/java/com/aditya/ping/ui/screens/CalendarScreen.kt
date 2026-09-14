@@ -225,7 +225,8 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
                     items(dayReminders, key = { it.id }) { reminder ->
                         ReminderCard(
                             reminder = reminder,
-                            onToggle = {},
+                            onToggleEnabled = {},
+                            onToggleCompleted = {},
                             onDelete = {},
                             onClick = { onEdit(reminder.id) },
                         )

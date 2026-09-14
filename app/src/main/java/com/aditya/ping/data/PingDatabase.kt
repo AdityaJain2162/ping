@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 
 @Database(
     entities = [ReminderEntity::class, SavedPlaceEntity::class, ReminderListEntity::class, AutomationEntity::class],
-    version = 11,
+    version = 12,
     exportSchema = false,
 )
 abstract class PingDatabase : RoomDatabase() {
