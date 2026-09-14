@@ -1,10 +1,12 @@
 package com.aditya.ping.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,13 +38,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -54,9 +64,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aditya.ping.R
 import com.aditya.ping.data.ReminderRepository
 import com.aditya.ping.ui.components.BannerAd
+import com.aditya.ping.ui.components.CelebrationOverlay
 import com.aditya.ping.ui.components.ReminderCard
 import com.aditya.ping.ui.theme.PrimaryGradientEnd
 import com.aditya.ping.ui.theme.PrimaryGradientStart
+import com.aditya.ping.util.FactService
 
 @Composable
 fun HomeScreen(
@@ -77,79 +89,114 @@ fun HomeScreen(
     val sections by vm.sections.collectAsStateWithLifecycle()
     val isSearching = searchQuery.isNotBlank()
 
-    Column(
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        // Gradient hero header with stats
-        AnimatedVisibility(
-            visible = !isSearching && reminders.isNotEmpty(),
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically(),
+    // Celebration overlay state
+    var showCelebration by remember { mutableStateOf(false) }
+
+    // Fact of the day
+    var factOfDay by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        factOfDay = FactService.getTodayFact(context)
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
         ) {
-            HeroStatsHeader(stats = stats)
-        }
-
-        // Search bar
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = vm::onSearchQueryChange,
-            placeholder = { Text(stringResource(R.string.home_search)) },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-            singleLine = true,
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        )
-
-        if (reminders.isEmpty() && !isSearching) {
-            EmptyState(onAdd = onAdd)
-        } else if (isSearching) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 80.dp, start = 16.dp, end = 16.dp, top = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+            // Gradient hero header with stats + progress ring
+            AnimatedVisibility(
+                visible = !isSearching && reminders.isNotEmpty(),
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
             ) {
-                items(reminders, key = { it.id }) { r ->
-                    ReminderCard(
-                        reminder = r,
-                        onToggle = { vm.toggleEnabled(r.id, it) },
-                        onDelete = { vm.delete(r.id) },
-                        onClick = { onEdit(r.id) },
-                    )
-                }
-                item { BannerAd() }
+                HeroStatsHeader(stats = stats)
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 80.dp, start = 16.dp, end = 16.dp, top = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                sections.forEach { section ->
-                    item(key = "header_${section.title}") {
-                        SectionHeader(section = section)
-                    }
-                    items(
-                        items = section.reminders,
-                        key = { "${section.title}_${it.id}" },
-                    ) { r ->
+
+            // Search bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = vm::onSearchQueryChange,
+                placeholder = { Text(stringResource(R.string.home_search)) },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+
+            if (reminders.isEmpty() && !isSearching) {
+                EmptyState(onAdd = onAdd, factOfDay = factOfDay)
+            } else if (isSearching) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 80.dp, start = 16.dp, end = 16.dp, top = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(reminders, key = { it.id }) { r ->
                         ReminderCard(
                             reminder = r,
-                            onToggle = { vm.toggleEnabled(r.id, it) },
+                            onToggle = { enabled ->
+                                vm.toggleEnabled(r.id, enabled)
+                                if (!enabled) {
+                                    // Just completed — celebrate!
+                                    showCelebration = true
+                                }
+                            },
                             onDelete = { vm.delete(r.id) },
                             onClick = { onEdit(r.id) },
                         )
                     }
+                    item { BannerAd() }
                 }
-                item { BannerAd() }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 80.dp, start = 16.dp, end = 16.dp, top = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    sections.forEach { section ->
+                        item(key = "header_${section.title}") {
+                            SectionHeader(section = section)
+                        }
+                        items(
+                            items = section.reminders,
+                            key = { "${section.title}_${it.id}" },
+                        ) { r ->
+                            ReminderCard(
+                                reminder = r,
+                                onToggle = { enabled ->
+                                    vm.toggleEnabled(r.id, enabled)
+                                    if (!enabled) {
+                                        showCelebration = true
+                                    }
+                                },
+                                onDelete = { vm.delete(r.id) },
+                                onClick = { onEdit(r.id) },
+                            )
+                        }
+                    }
+                    item { BannerAd() }
+                }
             }
         }
+
+        // Celebration overlay
+        CelebrationOverlay(
+            visible = showCelebration,
+            onDismiss = { showCelebration = false },
+        )
     }
 }
 
 @Composable
 private fun HeroStatsHeader(stats: HomeStats) {
+    val total = stats.active + stats.completed
+    val completionRate = if (total > 0) stats.completed.toFloat() / total else 0f
+    val animatedProgress by animateFloatAsState(
+        targetValue = completionRate,
+        label = "progressRing",
+    )
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -167,23 +214,74 @@ private fun HeroStatsHeader(stats: HomeStats) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            StatItem(
-                icon = Icons.Filled.Bolt,
-                count = stats.active,
-                label = stringResource(R.string.home_stat_active),
-            )
-            VerticalDivider()
-            StatItem(
-                icon = Icons.Filled.WarningAmber,
-                count = stats.overdue,
-                label = stringResource(R.string.home_stat_overdue),
-            )
-            VerticalDivider()
-            StatItem(
-                icon = Icons.Filled.CheckCircle,
-                count = stats.completed,
-                label = stringResource(R.string.home_stat_completed),
-            )
+            // Progress ring (Zeigarnik effect)
+            Box(
+                modifier = Modifier.size(64.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Canvas(modifier = Modifier.size(64.dp)) {
+                    val strokeWidth = 6.dp.toPx()
+                    // Background ring
+                    drawArc(
+                        color = Color.White.copy(alpha = 0.2f),
+                        startAngle = -90f,
+                        sweepAngle = 360f,
+                        useCenter = false,
+                        topLeft = Offset(
+                            (size.width - strokeWidth) / 2,
+                            (size.height - strokeWidth) / 2,
+                        ),
+                        size = Size(size.width - strokeWidth, size.height - strokeWidth),
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                    )
+                    // Progress ring
+                    drawArc(
+                        color = Color.White,
+                        startAngle = -90f,
+                        sweepAngle = 360f * animatedProgress,
+                        useCenter = false,
+                        topLeft = Offset(
+                            (size.width - strokeWidth) / 2,
+                            (size.height - strokeWidth) / 2,
+                        ),
+                        size = Size(size.width - strokeWidth, size.height - strokeWidth),
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                    )
+                }
+                Text(
+                    text = "${(completionRate * 100).toInt()}%",
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+
+            Spacer(Modifier.width(16.dp))
+
+            // Stats
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                StatItem(
+                    icon = Icons.Filled.Bolt,
+                    count = stats.active,
+                    label = stringResource(R.string.home_stat_active),
+                )
+                VerticalDivider()
+                StatItem(
+                    icon = Icons.Filled.WarningAmber,
+                    count = stats.overdue,
+                    label = stringResource(R.string.home_stat_overdue),
+                )
+                VerticalDivider()
+                StatItem(
+                    icon = Icons.Filled.CheckCircle,
+                    count = stats.completed,
+                    label = stringResource(R.string.home_stat_completed),
+                )
+            }
         }
     }
 }
@@ -267,7 +365,7 @@ private fun SectionHeader(section: ReminderSection) {
 }
 
 @Composable
-private fun EmptyState(onAdd: () -> Unit) {
+private fun EmptyState(onAdd: () -> Unit, factOfDay: String?) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
@@ -317,6 +415,38 @@ private fun EmptyState(onAdd: () -> Unit) {
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.home_empty_cta))
             }
+
+            // Fact of the day
+            if (factOfDay != null) {
+                Spacer(Modifier.height(24.dp))
+                FactCard(fact = factOfDay)
+            }
         }
+    }
+}
+
+@Composable
+private fun FactCard(fact: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = "Did you know?",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = fact,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+        )
     }
 }
