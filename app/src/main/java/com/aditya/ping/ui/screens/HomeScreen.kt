@@ -22,27 +22,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -60,7 +51,6 @@ import com.aditya.ping.data.ReminderRepository
 import com.aditya.ping.ui.components.BannerAd
 import com.aditya.ping.ui.components.ReminderCard
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onAdd: () -> Unit,
@@ -80,37 +70,9 @@ fun HomeScreen(
     val sections by vm.sections.collectAsStateWithLifecycle()
     val isSearching = searchQuery.isNotBlank()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.home_title)) },
-                actions = {
-                    IconButton(onClick = onCalendar) {
-                        Icon(Icons.Filled.CalendarMonth, contentDescription = stringResource(R.string.calendar_title))
-                    }
-                    IconButton(onClick = onLists) {
-                        Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.lists_title))
-                    }
-                    IconButton(onClick = onSavedPlaces) {
-                        Icon(Icons.Filled.LocationOn, contentDescription = stringResource(R.string.saved_places_title))
-                    }
-                    IconButton(onClick = onSettings) {
-                        Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings_title))
-                    }
-                },
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = onAdd) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.home_add))
-            }
-        },
-    ) { inner ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(inner),
-        ) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+    ) {
             // Search bar
             OutlinedTextField(
                 value = searchQuery,
@@ -175,7 +137,6 @@ fun HomeScreen(
                     item { BannerAd() }
                 }
             }
-        }
     }
 }
 
