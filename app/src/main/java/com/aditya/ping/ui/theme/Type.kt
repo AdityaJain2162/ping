@@ -15,6 +15,18 @@ val Poppins = FontFamily(
     Font(R.font.poppins_bold, FontWeight.Bold),
 )
 
+// Monospace family for timestamps, coordinates, and numeric data
+val Mono = FontFamily.Monospace
+
+// Timestamp style used across reminder cards, alarm screen, and history
+val TimestampStyle = TextStyle(
+    fontFamily = Mono,
+    fontWeight = FontWeight.Medium,
+    fontSize = 12.sp,
+    lineHeight = 16.sp,
+    letterSpacing = 0.sp,
+)
+
 private val Default = Typography(
     displayLarge = TextStyle(
         fontFamily = Poppins,

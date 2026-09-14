@@ -2,11 +2,11 @@ package com.aditya.ping.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// ─── Ping v2 Aesthetic Theme ──────────────────────────────────────
-// Inspired by 2025 design trends: warm coral + deep teal + golden amber
-// Richer saturation, softer surfaces, better dark mode contrast
+// Ping color palette — coral primary, teal secondary, amber tertiary
+// Forces a consistent brand identity across light/dark/AMOLED themes
+// (Dynamic Color is disabled by design — see Theme.kt)
 
-// Light tokens (seed: coral #E85D5D)
+// Light tokens
 val LightPrimary = Color(0xFFD8483E)
 val LightOnPrimary = Color(0xFFFFFFFF)
 val LightPrimaryContainer = Color(0xFFFFDAD4)
@@ -77,9 +77,3 @@ val AmoledSurfaceVariant = Color(0xFF0A0A0A)
 val AmoledSurfaceContainer = Color(0xFF111111)
 val AmoledSurfaceContainerHigh = Color(0xFF1A1A1A)
 val AmoledSurfaceContainerHighest = Color(0xFF222222)
-
-// Gradient colors for hero headers
-val PrimaryGradientStart = Color(0xFFD8483E)
-val PrimaryGradientEnd = Color(0xFFE87B3E)
-val SecondaryGradientStart = Color(0xFF006A6E)
-val SecondaryGradientEnd = Color(0xFF00A8AE)
