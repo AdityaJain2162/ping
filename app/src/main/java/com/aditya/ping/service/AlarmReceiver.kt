@@ -8,7 +8,9 @@ import androidx.core.app.NotificationCompat
 import com.aditya.ping.R
 import com.aditya.ping.data.PingDatabase
 import com.aditya.ping.ui.AlarmActivity
+import com.aditya.ping.util.AlarmScheduler
 import com.aditya.ping.util.NotificationChannels
+import com.aditya.ping.util.RecurrenceCalculator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -29,8 +31,21 @@ class AlarmReceiver : BroadcastReceiver() {
             showNotification(context, id.toInt(), title, note)
         }
 
+        // Mark as fired + schedule next occurrence if recurring
         CoroutineScope(Dispatchers.IO).launch {
-            PingDatabase.get(context).reminderDao().markFired(id, System.currentTimeMillis())
+            val dao = PingDatabase.get(context).reminderDao()
+            val reminder = dao.getById(id)
+            if (reminder != null) {
+                dao.markFired(id, System.currentTimeMillis())
+
+                // Schedule next occurrence if recurring
+                val next = RecurrenceCalculator.nextOccurrence(reminder, System.currentTimeMillis())
+                if (next != null) {
+                    val updated = reminder.copy(dueAt = next)
+                    dao.update(updated)
+                    AlarmScheduler.schedule(context, updated)
+                }
+            }
         }
     }
 
