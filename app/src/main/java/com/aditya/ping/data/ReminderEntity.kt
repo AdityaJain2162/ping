@@ -39,6 +39,10 @@ data class ReminderEntity(
     val quickActionType: Int = 0,
     /** quick action data: phone number, package name, URL, or label */
     val quickActionData: String = "",
+    /** quick action extra data: e.g., WhatsApp/SMS message body */
+    val quickActionMessage: String = "",
+    /** custom ringtone URI for alarms, empty = default */
+    val ringtoneUri: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val enabled: Boolean = true,
     /** last fired epoch millis (cooldown) */
