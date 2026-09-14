@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -76,36 +77,51 @@ fun ReminderCard(
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Row(
             modifier = Modifier
-                .height(80.dp)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(start = 0.dp, end = 8.dp, top = 14.dp, bottom = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Colored accent bar
+            // Gradient accent bar — wider, rounded
             Box(
                 modifier = Modifier
-                    .width(4.dp)
-                    .fillMaxHeight()
-                    .background(accentColor),
+                    .width(6.dp)
+                    .height(56.dp)
+                    .padding(start = 0.dp)
+                    .clip(RoundedCornerShape(topEnd = 6.dp, bottomEnd = 6.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(accentColor, accentColor.copy(alpha = 0.6f)),
+                        ),
+                    ),
             )
 
             Row(
                 modifier = Modifier
-                    .padding(horizontal = 12.dp, vertical = 12.dp)
+                    .padding(start = 14.dp, end = 4.dp)
                     .weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Icon badge
+                // Icon badge — larger, gradient background
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(accentColor.copy(alpha = 0.15f)),
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(
+                            Brush.linearGradient(
+                                listOf(
+                                    accentColor.copy(alpha = 0.18f),
+                                    accentColor.copy(alpha = 0.08f),
+                                ),
+                            ),
+                        ),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
@@ -117,30 +133,30 @@ fun ReminderCard(
                         },
                         contentDescription = null,
                         tint = accentColor,
-                        modifier = Modifier.size(22.dp),
+                        modifier = Modifier.size(24.dp),
                     )
                 }
 
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(14.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = reminder.title,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Medium,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             color = if (isDone) MaterialTheme.colorScheme.onSurfaceVariant
                             else MaterialTheme.colorScheme.onSurface,
                         )
                         if (isOverdue) {
-                            Spacer(Modifier.width(6.dp))
+                            Spacer(Modifier.width(8.dp))
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.12f))
+                                    .padding(horizontal = 8.dp, vertical = 3.dp),
                             ) {
                                 Text(
                                     text = stringResource(R.string.card_overdue),
@@ -151,7 +167,7 @@ fun ReminderCard(
                             }
                         }
                     }
-                    Spacer(Modifier.height(2.dp))
+                    Spacer(Modifier.height(4.dp))
 
                     // Location row
                     if (reminder.lat != 0.0 || reminder.lng != 0.0) {
@@ -160,9 +176,9 @@ fun ReminderCard(
                                 imageVector = Icons.Filled.LocationOn,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(12.dp),
+                                modifier = Modifier.size(13.dp),
                             )
-                            Spacer(Modifier.width(4.dp))
+                            Spacer(Modifier.width(5.dp))
                             Text(
                                 text = reminder.addressLabel.ifBlank {
                                     "%.4f, %.4f".format(reminder.lat, reminder.lng)
@@ -173,6 +189,7 @@ fun ReminderCard(
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
+                        Spacer(Modifier.height(2.dp))
                     }
 
                     // Time row
@@ -184,9 +201,9 @@ fun ReminderCard(
                                 contentDescription = null,
                                 tint = if (isOverdue) MaterialTheme.colorScheme.error
                                 else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(12.dp),
+                                modifier = Modifier.size(13.dp),
                             )
-                            Spacer(Modifier.width(4.dp))
+                            Spacer(Modifier.width(5.dp))
                             Text(
                                 text = timeFmt.format(Date(due)),
                                 style = MaterialTheme.typography.bodySmall,
@@ -196,6 +213,7 @@ fun ReminderCard(
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
+                        Spacer(Modifier.height(2.dp))
                     }
 
                     if (reminder.note.isNotBlank()) {
@@ -216,6 +234,7 @@ fun ReminderCard(
                     Icons.Filled.Delete,
                     contentDescription = stringResource(R.string.add_cancel),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
                 )
             }
         }
