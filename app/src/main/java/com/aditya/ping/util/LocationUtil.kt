@@ -3,6 +3,7 @@ package com.aditya.ping.util
 import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location
+import android.location.LocationManager
 import android.os.Looper
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -27,6 +28,16 @@ class LocationUtil(private val context: Context) {
         client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
             .addOnSuccessListener { cont.resume(it) }
             .addOnFailureListener { cont.resume(null) }
+    }
+
+    /**
+     * Returns true if the device has any location provider enabled (GPS or network).
+     */
+    fun isLocationEnabled(): Boolean {
+        val lm = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+            ?: return false
+        return lm.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+            lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
     }
 
     companion object {

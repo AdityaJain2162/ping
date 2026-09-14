@@ -3,6 +3,8 @@ package com.aditya.ping.ui.screens
 import android.Manifest
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.Intent
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -34,8 +37,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -87,6 +92,7 @@ fun AddEditScreen(
     }
 
     val dateFmt = remember { SimpleDateFormat("EEE, MMM d 'at' h:mm a", Locale.getDefault()) }
+    var showLocationDisabledDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -236,10 +242,12 @@ fun AddEditScreen(
             // --- Location trigger section ---
             Text(stringResource(R.string.add_location_label), style = MaterialTheme.typography.labelLarge)
             OutlinedButton(onClick = {
-                if (!PermissionUtil.hasFineLocation(context)) {
+                val util = LocationUtil(context)
+                if (!util.isLocationEnabled()) {
+                    showLocationDisabledDialog = true
+                } else if (!PermissionUtil.hasFineLocation(context)) {
                     locationLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
                 } else {
-                    val util = LocationUtil(context)
                     scope.launch {
                         val loc = withContext(Dispatchers.IO) { util.currentLocation() }
                         if (loc != null) vm.onLocation(loc.latitude, loc.longitude, "Current location")
@@ -319,6 +327,27 @@ fun AddEditScreen(
                 }
             }
         }
+    }
+
+    if (showLocationDisabledDialog) {
+        AlertDialog(
+            onDismissRequest = { showLocationDisabledDialog = false },
+            title = { Text(stringResource(R.string.location_off_title)) },
+            text = { Text(stringResource(R.string.location_off_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLocationDisabledDialog = false
+                    context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                }) {
+                    Text(stringResource(R.string.location_off_open_settings))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLocationDisabledDialog = false }) {
+                    Text(stringResource(R.string.add_cancel))
+                }
+            },
+        )
     }
 }
 
