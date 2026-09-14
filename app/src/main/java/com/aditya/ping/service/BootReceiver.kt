@@ -20,11 +20,15 @@ class BootReceiver : BroadcastReceiver() {
         val appContext = context.applicationContext
 
         // 1. Restart geofence monitoring service
-        val service = Intent(appContext, GeofenceService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            appContext.startForegroundService(service)
-        } else {
-            appContext.startService(service)
+        try {
+            val service = Intent(appContext, GeofenceService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                appContext.startForegroundService(service)
+            } else {
+                appContext.startService(service)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("BootReceiver", "Failed to start GeofenceService: ${e.message}")
         }
 
         // 2. Re-schedule all time-based reminders + alarms

@@ -17,45 +17,55 @@ object SmartSnooze {
     /**
      * Returns the available snooze options for the current time.
      * Options that would be in the past are filtered out.
+     * Labels dynamically adjust when a time rolls over to tomorrow.
      */
     fun options(): List<SnoozeOption> {
         val now = System.currentTimeMillis()
         val cal = Calendar.getInstance()
+        val today = cal.get(Calendar.DAY_OF_YEAR)
 
         val soon = now + 15 * 60_000L
 
-        val laterToday = (cal.clone() as Calendar).apply {
+        val laterTodayCal = (cal.clone() as Calendar).apply {
             add(Calendar.HOUR_OF_DAY, 3)
-        }.timeInMillis
+        }
+        val laterToday = laterTodayCal.timeInMillis
+        val laterTodayLabel = if (laterTodayCal.get(Calendar.DAY_OF_YEAR) != today)
+            "In 3 hours" else "Later today (3 hr)"
 
-        val thisEvening = (cal.clone() as Calendar).apply {
+        val thisEveningCal = (cal.clone() as Calendar).apply {
             set(Calendar.HOUR_OF_DAY, 18)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
             if (timeInMillis <= now) add(Calendar.DAY_OF_YEAR, 1)
-        }.timeInMillis
+        }
+        val thisEvening = thisEveningCal.timeInMillis
+        val thisEveningLabel = if (thisEveningCal.get(Calendar.DAY_OF_YEAR) != today)
+            "Tomorrow evening (6 PM)" else "This evening (6 PM)"
 
-        val tomorrowMorning = (cal.clone() as Calendar).apply {
+        val tomorrowMorningCal = (cal.clone() as Calendar).apply {
             add(Calendar.DAY_OF_YEAR, 1)
             set(Calendar.HOUR_OF_DAY, 9)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
+        }
+        val tomorrowMorning = tomorrowMorningCal.timeInMillis
 
-        val tomorrowMidday = (cal.clone() as Calendar).apply {
+        val tomorrowMiddayCal = (cal.clone() as Calendar).apply {
             add(Calendar.DAY_OF_YEAR, 1)
             set(Calendar.HOUR_OF_DAY, 12)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
+        }
+        val tomorrowMidday = tomorrowMiddayCal.timeInMillis
 
         return listOf(
             SnoozeOption("Soon (15 min)") { soon },
-            SnoozeOption("Later today (3 hr)") { laterToday },
-            SnoozeOption("This evening (6 PM)") { thisEvening },
+            SnoozeOption(laterTodayLabel) { laterToday },
+            SnoozeOption(thisEveningLabel) { thisEvening },
             SnoozeOption("Tomorrow morning (9 AM)") { tomorrowMorning },
             SnoozeOption("Tomorrow midday (12 PM)") { tomorrowMidday },
         ).filter { it.calculate() > now }

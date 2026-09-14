@@ -72,7 +72,7 @@ object RecurrenceCalculator {
             else -> return null
         }
 
-        if (end != null && next >= end) return null
+        if (end != null && next > end) return null
         return next
     }
 }
