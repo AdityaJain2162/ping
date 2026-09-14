@@ -5,13 +5,10 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 @Database(
     entities = [ReminderEntity::class, SavedPlaceEntity::class, ReminderListEntity::class, AutomationEntity::class],
-    version = 12,
+    version = 13,
     exportSchema = false,
 )
 abstract class PingDatabase : RoomDatabase() {
@@ -34,82 +31,62 @@ abstract class PingDatabase : RoomDatabase() {
                     .addCallback(object : Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)
-                            // Pre-load sample reminders on first database creation
-                            INSTANCE?.let { instance ->
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    prepopulate(instance.reminderDao())
-                                }
-                            }
+                            // Insert preloaded reminders directly via SQL — INSTANCE is null
+                            // at this point because .also { INSTANCE = it } hasn't run yet
+                            prepopulateViaSql(db)
                         }
                     })
                     .build().also { INSTANCE = it }
             }
 
-        private suspend fun prepopulate(dao: ReminderDao) {
+        private fun prepopulateViaSql(db: SupportSQLiteDatabase) {
+            val morningAlarm = nextTimeTodayOrTomorrow(7, 0)
+            val workReminder = nextTimeTodayOrTomorrow(9, 0)
+            val eveningReminder = nextTimeTodayOrTomorrow(22, 0)
             val now = System.currentTimeMillis()
 
-            // Morning alarm — 7:00 AM, daily, turned off by default
-            val morningAlarm = nextTimeTodayOrTomorrow(7, 0)
-            dao.insert(
-                ReminderEntity(
-                    title = "Morning Alarm",
-                    note = "Time to wake up and start the day",
-                    lat = 0.0,
-                    lng = 0.0,
-                    dueAt = morningAlarm,
-                    isAlarm = true,
-                    snoozeMinutes = 10,
-                    recurrenceType = 1, // daily
-                    enabled = false,
-                ),
+            // Morning Alarm — 7:00 AM, daily, full-screen alarm, off by default
+            db.execSQL(
+                """INSERT INTO reminders (title, note, lat, lng, addressLabel, radiusMeters,
+                triggerType, dueAt, isAlarm, snoozeMinutes, recurrenceType, recurrenceInterval,
+                recurrenceEndDate, nagMode, nagIntervalMinutes, listId, triggerMode,
+                quickActionType, quickActionData, quickActionMessage, ringtoneUri,
+                createdAt, enabled, completed, completedAt, lastFiredAt)
+                VALUES (?, ?, 0, 0, '', 150, 0, ?, 1, 10, 1, 1, NULL, 0, 15, NULL, 0, 0, '', '', '', ?, 0, 0, NULL, 0)""",
+                arrayOf("Morning Alarm", "Time to wake up and start the day", morningAlarm, now),
             )
 
-            // Work reminder — 9:00 AM, weekdays, turned off by default
-            val workReminder = nextTimeTodayOrTomorrow(9, 0)
-            dao.insert(
-                ReminderEntity(
-                    title = "Leave for Work",
-                    note = "Don't forget your keys and badge",
-                    lat = 0.0,
-                    lng = 0.0,
-                    dueAt = workReminder,
-                    isAlarm = false,
-                    snoozeMinutes = 5,
-                    recurrenceType = 3, // weekdays
-                    enabled = false,
-                ),
+            // Leave for Work — 9:00 AM, weekdays, notification, off by default
+            db.execSQL(
+                """INSERT INTO reminders (title, note, lat, lng, addressLabel, radiusMeters,
+                triggerType, dueAt, isAlarm, snoozeMinutes, recurrenceType, recurrenceInterval,
+                recurrenceEndDate, nagMode, nagIntervalMinutes, listId, triggerMode,
+                quickActionType, quickActionData, quickActionMessage, ringtoneUri,
+                createdAt, enabled, completed, completedAt, lastFiredAt)
+                VALUES (?, ?, 0, 0, '', 150, 0, ?, 0, 5, 3, 1, NULL, 0, 15, NULL, 0, 0, '', '', '', ?, 0, 0, NULL, 0)""",
+                arrayOf("Leave for Work", "Don't forget your keys and badge", workReminder, now),
             )
 
-            // Evening reminder — 10:00 PM, daily, turned off by default
-            val eveningReminder = nextTimeTodayOrTomorrow(22, 0)
-            dao.insert(
-                ReminderEntity(
-                    title = "Wind Down",
-                    note = "Put the phone away and get ready for bed",
-                    lat = 0.0,
-                    lng = 0.0,
-                    dueAt = eveningReminder,
-                    isAlarm = false,
-                    snoozeMinutes = 5,
-                    recurrenceType = 1, // daily
-                    nagMode = false,
-                    enabled = false,
-                ),
+            // Wind Down — 10:00 PM, daily, notification, off by default
+            db.execSQL(
+                """INSERT INTO reminders (title, note, lat, lng, addressLabel, radiusMeters,
+                triggerType, dueAt, isAlarm, snoozeMinutes, recurrenceType, recurrenceInterval,
+                recurrenceEndDate, nagMode, nagIntervalMinutes, listId, triggerMode,
+                quickActionType, quickActionData, quickActionMessage, ringtoneUri,
+                createdAt, enabled, completed, completedAt, lastFiredAt)
+                VALUES (?, ?, 0, 0, '', 150, 0, ?, 0, 5, 1, 1, NULL, 0, 15, NULL, 0, 0, '', '', '', ?, 0, 0, NULL, 0)""",
+                arrayOf("Wind Down", "Put the phone away and get ready for bed", eveningReminder, now),
             )
 
-            // Location reminder — example, turned off by default
-            dao.insert(
-                ReminderEntity(
-                    title = "Buy groceries",
-                    note = "Milk, eggs, bread — tap to set your store location",
-                    lat = 0.0,
-                    lng = 0.0,
-                    addressLabel = "Tap to set location",
-                    radiusMeters = 200,
-                    triggerType = 0, // on arrival
-                    dueAt = null,
-                    enabled = false,
-                ),
+            // Buy groceries — location reminder, off by default
+            db.execSQL(
+                """INSERT INTO reminders (title, note, lat, lng, addressLabel, radiusMeters,
+                triggerType, dueAt, isAlarm, snoozeMinutes, recurrenceType, recurrenceInterval,
+                recurrenceEndDate, nagMode, nagIntervalMinutes, listId, triggerMode,
+                quickActionType, quickActionData, quickActionMessage, ringtoneUri,
+                createdAt, enabled, completed, completedAt, lastFiredAt)
+                VALUES (?, ?, 0, 0, ?, 200, 0, NULL, 0, 5, 0, 1, NULL, 0, 15, NULL, 0, 0, '', '', '', ?, 0, 0, NULL, 0)""",
+                arrayOf("Buy groceries", "Milk, eggs, bread — tap to set your store location", "Tap to set location", now),
             )
         }
 

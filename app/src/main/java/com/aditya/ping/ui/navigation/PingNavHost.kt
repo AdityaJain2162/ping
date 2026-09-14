@@ -34,6 +34,7 @@ import com.aditya.ping.R
 import com.aditya.ping.ui.screens.AddEditScreen
 import com.aditya.ping.ui.screens.AutomationsScreen
 import com.aditya.ping.ui.screens.CalendarScreen
+import com.aditya.ping.ui.screens.HistoryScreen
 import com.aditya.ping.ui.screens.HomeScreen
 import com.aditya.ping.ui.screens.ListsScreen
 import com.aditya.ping.ui.screens.SavedPlacesScreen
@@ -114,6 +115,7 @@ fun PingNavHost() {
                     onSavedPlaces = { nav.navigate(Routes.SAVED_PLACES) },
                     onLists = { nav.navigate(Routes.LISTS) },
                     onCalendar = { nav.navigate(Routes.CALENDAR) },
+                    onHistory = { nav.navigate(Routes.HISTORY) },
                 )
             }
             composable(Routes.ADD) {
@@ -151,6 +153,9 @@ fun PingNavHost() {
             }
             composable(Routes.AUTOMATIONS) {
                 AutomationsScreen()
+            }
+            composable(Routes.HISTORY) {
+                HistoryScreen(onBack = { nav.popBackStack() })
             }
         }
     }

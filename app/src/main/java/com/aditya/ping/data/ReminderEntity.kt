@@ -47,6 +47,8 @@ data class ReminderEntity(
     val enabled: Boolean = true,
     /** whether the user has marked this reminder as done (separate from enabled) */
     val completed: Boolean = false,
+    /** epoch millis when the reminder was marked completed, for history pruning */
+    val completedAt: Long? = null,
     /** last fired epoch millis (cooldown) */
     val lastFiredAt: Long = 0L,
 )

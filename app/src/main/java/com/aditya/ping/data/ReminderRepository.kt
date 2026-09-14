@@ -17,7 +17,9 @@ class ReminderRepository(private val dao: ReminderDao) {
     suspend fun update(reminder: ReminderEntity) = dao.update(reminder)
     suspend fun deleteById(id: Long) = dao.deleteById(id)
     suspend fun setEnabled(id: Long, enabled: Boolean) = dao.setEnabled(id, enabled)
-    suspend fun setCompleted(id: Long, completed: Boolean) = dao.setCompleted(id, completed)
+    suspend fun setCompleted(id: Long, completed: Boolean, completedAt: Long?) = dao.setCompleted(id, completed, completedAt)
+    fun observeHistory(since: Long): Flow<List<ReminderEntity>> = dao.observeHistory(since)
+    suspend fun pruneOldCompleted(before: Long) = dao.pruneOldCompleted(before)
     suspend fun markFired(id: Long, timestamp: Long) = dao.markFired(id, timestamp)
 
     companion object {

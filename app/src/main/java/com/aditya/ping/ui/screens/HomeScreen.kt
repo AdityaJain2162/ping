@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -78,6 +79,7 @@ fun HomeScreen(
     onSavedPlaces: () -> Unit,
     onLists: () -> Unit,
     onCalendar: () -> Unit,
+    onHistory: () -> Unit,
 ) {
     val context = LocalContext.current
     val appContext = context.applicationContext
@@ -108,7 +110,20 @@ fun HomeScreen(
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically(),
             ) {
-                HeroStatsHeader(stats = stats)
+                Column {
+                    HeroStatsHeader(stats = stats)
+                    if (stats.completed > 0) {
+                        Text(
+                            text = stringResource(R.string.home_view_history, stats.completed),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .clickable { onHistory() },
+                        )
+                    }
+                }
             }
 
             // Search bar
