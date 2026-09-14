@@ -34,6 +34,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -87,7 +90,7 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
     val monthFmt = remember { SimpleDateFormat("MMMM yyyy", Locale.getDefault()) }
     val dayFmt = remember { SimpleDateFormat("EEE, MMM d", Locale.getDefault()) }
 
-    // Locale-aware day headers (first letter of each day name)
+    // Locale-aware day headers
     val dayHeaders = remember {
         val cal = Calendar.getInstance()
         val firstDay = cal.firstDayOfWeek
@@ -99,7 +102,7 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
         }
     }
 
-    // Map of day -> has reminders (for indicator dots)
+    // Days with reminder indicator dots
     val daysWithReminders = remember(monthReminders) {
         monthReminders.mapNotNull { r ->
             r.dueAt?.let {
@@ -109,62 +112,81 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
         }.toSet()
     }
 
-    Column(
+    // Calendar grid calculations
+    val firstDayOfMonth = (displayedMonth.clone() as Calendar).apply {
+        set(Calendar.DAY_OF_MONTH, 1)
+    }
+    val daysInMonth = displayedMonth.getActualMaximum(Calendar.DAY_OF_MONTH)
+    val firstDayOfWeek = (firstDayOfMonth.get(Calendar.DAY_OF_WEEK) - Calendar.getInstance().firstDayOfWeek + 7) % 7
+    val totalCells = ((firstDayOfWeek + daysInMonth + 6) / 7) * 7
+    val rows = totalCells / 7
+
+    // NestedScroll: consume horizontal drags so the pager doesn't steal them
+    // from SwipeToDismissBox inside the LazyColumn. Vertical scrolls pass
+    // through to the LazyColumn normally.
+    val pagerScrollGuard = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: androidx.compose.ui.geometry.Offset, source: NestedScrollSource): androidx.compose.ui.geometry.Offset {
+                // Consume horizontal pre-scroll so the pager doesn't intercept
+                return if (available.x != 0f && available.y == 0f) {
+                    available
+                } else {
+                    androidx.compose.ui.geometry.Offset.Zero
+                }
+            }
+        }
+    }
+
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .nestedScroll(pagerScrollGuard),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
         // Month navigation
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            IconButton(onClick = {
-                displayedMonth.add(Calendar.MONTH, -1)
-                displayedMonth = displayedMonth.clone() as Calendar
-            }) {
-                Icon(Icons.Filled.ChevronLeft, contentDescription = stringResource(R.string.calendar_prev_month))
-            }
-            Text(
-                monthFmt.format(displayedMonth.time),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            IconButton(onClick = {
-                displayedMonth.add(Calendar.MONTH, 1)
-                displayedMonth = displayedMonth.clone() as Calendar
-            }) {
-                Icon(Icons.Filled.ChevronRight, contentDescription = stringResource(R.string.calendar_next_month))
+        item(key = "monthNav") {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                IconButton(onClick = {
+                    displayedMonth.add(Calendar.MONTH, -1)
+                    displayedMonth = displayedMonth.clone() as Calendar
+                }) {
+                    Icon(Icons.Filled.ChevronLeft, contentDescription = stringResource(R.string.calendar_prev_month))
+                }
+                Text(
+                    monthFmt.format(displayedMonth.time),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                IconButton(onClick = {
+                    displayedMonth.add(Calendar.MONTH, 1)
+                    displayedMonth = displayedMonth.clone() as Calendar
+                }) {
+                    Icon(Icons.Filled.ChevronRight, contentDescription = stringResource(R.string.calendar_next_month))
+                }
             }
         }
-
-        Spacer(Modifier.height(8.dp))
 
         // Day headers
-        Row(modifier = Modifier.fillMaxWidth()) {
-            dayHeaders.forEach { day ->
-                Text(
-                    text = day,
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        item(key = "dayHeaders") {
+            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                dayHeaders.forEach { day ->
+                    Text(
+                        text = day,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
-        Spacer(Modifier.height(4.dp))
 
-        // Calendar grid
-        val firstDayOfMonth = (displayedMonth.clone() as Calendar).apply {
-            set(Calendar.DAY_OF_MONTH, 1)
-        }
-        val daysInMonth = displayedMonth.getActualMaximum(Calendar.DAY_OF_MONTH)
-        val firstDayOfWeek = (firstDayOfMonth.get(Calendar.DAY_OF_WEEK) - Calendar.getInstance().firstDayOfWeek + 7) % 7
-
-        val totalCells = ((firstDayOfWeek + daysInMonth + 6) / 7) * 7
-        val rows = totalCells / 7
-
-        for (row in 0 until rows) {
+        // Calendar grid — each row as a separate item
+        items(rows, key = { row -> "gridRow_$row" }) { row ->
             Row(modifier = Modifier.fillMaxWidth()) {
                 for (col in 0 until 7) {
                     val cellIndex = row * 7 + col
@@ -192,16 +214,13 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(1f)
-                            .clip(CircleShape)
                             .clickable(enabled = isCurrentMonth) {
                                 selectedDate = cellCal.timeInMillis
                             },
                         contentAlignment = Alignment.Center,
                     ) {
                         if (isCurrentMonth) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Box(
                                     modifier = Modifier
                                         .size(36.dp)
@@ -238,28 +257,32 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
             }
         }
 
-        Spacer(Modifier.height(16.dp))
+        // Selected day label
+        item(key = "selectedDayLabel") {
+            Spacer(Modifier.height(16.dp))
+            Text(
+                dayFmt.format(java.util.Date(selectedDate)),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(Modifier.height(8.dp))
+        }
 
-        // Selected day's reminders
-        Text(
-            dayFmt.format(java.util.Date(selectedDate)),
-            style = MaterialTheme.typography.titleMedium,
-        )
-        Spacer(Modifier.height(8.dp))
-
+        // Reminders for selected day
         if (dayReminders.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    stringResource(R.string.calendar_no_reminders),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            item(key = "empty") {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        stringResource(R.string.calendar_no_reminders),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(dayReminders, key = { it.id }) { reminder ->
+            items(dayReminders, key = { it.id }) { reminder ->
+                Box(modifier = Modifier.padding(bottom = 8.dp)) {
                     ReminderCard(
                         reminder = reminder,
                         onToggleEnabled = { enabled ->
