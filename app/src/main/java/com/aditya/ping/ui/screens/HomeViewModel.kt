@@ -84,6 +84,10 @@ class HomeViewModel(
                 it.enabled && (it.lat != 0.0 || it.lng != 0.0) && (it.dueAt == null || it.dueAt > endOfToday)
             }
 
+            val upcomingList = list.filter {
+                it.enabled && it.dueAt != null && it.dueAt > endOfToday && (it.lat == 0.0 && it.lng == 0.0)
+            }.sortedBy { it.dueAt }
+
             val laterList = list.filter {
                 it.enabled && it.dueAt == null && (it.lat == 0.0 && it.lng == 0.0)
             }
@@ -94,6 +98,7 @@ class HomeViewModel(
                 if (overdueList.isNotEmpty()) add(ReminderSection("Overdue", overdueList, isOverdue = true))
                 if (dueTodayList.isNotEmpty()) add(ReminderSection("Due Today", dueTodayList))
                 if (locationList.isNotEmpty()) add(ReminderSection("Location", locationList))
+                if (upcomingList.isNotEmpty()) add(ReminderSection("Upcoming", upcomingList))
                 if (laterList.isNotEmpty()) add(ReminderSection("Later", laterList))
                 if (completedList.isNotEmpty()) add(ReminderSection("Completed", completedList))
             }
