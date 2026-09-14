@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.adityajain.geonote.R
 import com.adityajain.geonote.data.ReminderRepository
+import com.adityajain.geonote.ui.components.BannerAd
 import com.adityajain.geonote.ui.components.ReminderCard
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -89,6 +90,7 @@ fun HomeScreen(
                         onClick = { onEdit(r.id) },
                     )
                 }
+                item { BannerAd() }
             }
         }
     }
