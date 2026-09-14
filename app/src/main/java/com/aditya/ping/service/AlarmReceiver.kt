@@ -9,6 +9,7 @@ import com.aditya.ping.R
 import com.aditya.ping.data.PingDatabase
 import com.aditya.ping.ui.AlarmActivity
 import com.aditya.ping.util.AlarmScheduler
+import com.aditya.ping.util.NagScheduler
 import com.aditya.ping.util.NotificationChannels
 import com.aditya.ping.util.RecurrenceCalculator
 import kotlinx.coroutines.CoroutineScope
@@ -44,6 +45,11 @@ class AlarmReceiver : BroadcastReceiver() {
                     val updated = reminder.copy(dueAt = next)
                     dao.update(updated)
                     AlarmScheduler.schedule(context, updated)
+                }
+
+                // Start nagging if nag mode is enabled
+                if (reminder.nagMode) {
+                    NagScheduler.scheduleNext(context, reminder)
                 }
             }
         }

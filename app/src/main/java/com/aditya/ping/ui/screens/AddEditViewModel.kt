@@ -34,6 +34,10 @@ data class AddEditState(
     val recurrenceInterval: Int = 1,
     /** recurrence end date epoch millis, null = no end */
     val recurrenceEndDate: Long? = null,
+    /** if true, keep nagging with persistent notifications until marked done */
+    val nagMode: Boolean = false,
+    /** nag interval in minutes */
+    val nagIntervalMinutes: Int = 15,
     val isEdit: Boolean = false,
     val saving: Boolean = false,
     val saved: Boolean = false,
@@ -58,6 +62,7 @@ class AddEditViewModel(
                     dueAt = r.dueAt, isAlarm = r.isAlarm, snoozeMinutes = r.snoozeMinutes,
                     recurrenceType = r.recurrenceType, recurrenceInterval = r.recurrenceInterval,
                     recurrenceEndDate = r.recurrenceEndDate,
+                    nagMode = r.nagMode, nagIntervalMinutes = r.nagIntervalMinutes,
                     isEdit = true,
                 )
             }
@@ -76,6 +81,8 @@ class AddEditViewModel(
     fun onRecurrenceTypeChange(v: Int) = _state.update { it.copy(recurrenceType = v) }
     fun onRecurrenceIntervalChange(v: Int) = _state.update { it.copy(recurrenceInterval = v.coerceAtLeast(1)) }
     fun onRecurrenceEndDateChange(v: Long?) = _state.update { it.copy(recurrenceEndDate = v) }
+    fun onNagModeToggle(v: Boolean) = _state.update { it.copy(nagMode = v) }
+    fun onNagIntervalChange(v: Int) = _state.update { it.copy(nagIntervalMinutes = v.coerceIn(1, 120)) }
 
     fun save() = viewModelScope.launch {
         val s = _state.value
@@ -101,6 +108,8 @@ class AddEditViewModel(
             recurrenceType = if (s.dueAt != null) s.recurrenceType else 0,
             recurrenceInterval = s.recurrenceInterval,
             recurrenceEndDate = s.recurrenceEndDate,
+            nagMode = s.nagMode,
+            nagIntervalMinutes = s.nagIntervalMinutes,
         )
         val id = if (s.isEdit) {
             repo.update(entity)

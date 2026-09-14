@@ -210,6 +210,29 @@ fun AddEditScreen(
                 }
             }
 
+            // --- Nag mode section ---
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.add_nag_toggle), style = MaterialTheme.typography.bodyMedium)
+                androidx.compose.material3.Switch(
+                    checked = state.nagMode,
+                    onCheckedChange = vm::onNagModeToggle,
+                )
+            }
+            if (state.nagMode) {
+                OutlinedTextField(
+                    value = state.nagIntervalMinutes.toString(),
+                    onValueChange = { v -> v.toIntOrNull()?.let { vm.onNagIntervalChange(it) } },
+                    label = { Text(stringResource(R.string.add_nag_interval)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
             // --- Location trigger section ---
             Text(stringResource(R.string.add_location_label), style = MaterialTheme.typography.labelLarge)
             OutlinedButton(onClick = {

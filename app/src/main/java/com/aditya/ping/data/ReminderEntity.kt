@@ -27,6 +27,10 @@ data class ReminderEntity(
     val recurrenceInterval: Int = 1,
     /** recurrence end date epoch millis, null = no end */
     val recurrenceEndDate: Long? = null,
+    /** if true, keep nagging with persistent notifications until marked done */
+    val nagMode: Boolean = false,
+    /** nag interval in minutes */
+    val nagIntervalMinutes: Int = 15,
     val createdAt: Long = System.currentTimeMillis(),
     val enabled: Boolean = true,
     /** last fired epoch millis (cooldown) */
