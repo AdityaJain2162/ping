@@ -1,6 +1,8 @@
 package com.aditya.ping.ui.navigation
 
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -34,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -141,6 +144,34 @@ fun PingNavHost() {
             }
         },
     ) { inner ->
+        val tabDuration = 350
+
+        // Slide direction is determined by comparing tab indices of the
+        // initial and target routes. Only slides when both are tab routes;
+        // falls back to fade for non-tab transitions (Add, Edit, Settings, etc.)
+        val tabEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
+            val initialIndex = tabRoutes.indexOf(initialState.destination.route)
+            val targetIndex = tabRoutes.indexOf(targetState.destination.route)
+            if (initialIndex >= 0 && targetIndex >= 0 && targetIndex > initialIndex) {
+                slideInHorizontally(tween(tabDuration)) { it } + fadeIn(tween(tabDuration))
+            } else if (initialIndex >= 0 && targetIndex >= 0 && targetIndex < initialIndex) {
+                slideInHorizontally(tween(tabDuration)) { -it } + fadeIn(tween(tabDuration))
+            } else {
+                fadeIn(tween(tabDuration))
+            }
+        }
+        val tabExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
+            val initialIndex = tabRoutes.indexOf(initialState.destination.route)
+            val targetIndex = tabRoutes.indexOf(targetState.destination.route)
+            if (initialIndex >= 0 && targetIndex >= 0 && targetIndex > initialIndex) {
+                slideOutHorizontally(tween(tabDuration)) { -it } + fadeOut(tween(tabDuration))
+            } else if (initialIndex >= 0 && targetIndex >= 0 && targetIndex < initialIndex) {
+                slideOutHorizontally(tween(tabDuration)) { it } + fadeOut(tween(tabDuration))
+            } else {
+                fadeOut(tween(tabDuration))
+            }
+        }
+
         NavHost(
             navController = nav,
             startDestination = Routes.HOME,
@@ -149,20 +180,10 @@ fun PingNavHost() {
                 .padding(inner)
                 .then(swipeModifier),
         ) {
-            val tabDuration = 300
-            fun tabEnter(direction: AnimatedContentTransitionScope.SlideDirection) =
-                slideInHorizontally(tween(tabDuration)) { full ->
-                    if (direction == AnimatedContentTransitionScope.SlideDirection.Left) full else -full
-                } + fadeIn(tween(tabDuration))
-            fun tabExit(direction: AnimatedContentTransitionScope.SlideDirection) =
-                slideOutHorizontally(tween(tabDuration)) { full ->
-                    if (direction == AnimatedContentTransitionScope.SlideDirection.Left) -full else full
-                } + fadeOut(tween(tabDuration))
-
             composable(
                 Routes.HOME,
-                enterTransition = { tabEnter(AnimatedContentTransitionScope.SlideDirection.Left) },
-                exitTransition = { tabExit(AnimatedContentTransitionScope.SlideDirection.Left) },
+                enterTransition = tabEnter,
+                exitTransition = tabExit,
             ) {
                 HomeScreen(
                     onAdd = { nav.navigate(Routes.ADD) },
@@ -176,8 +197,8 @@ fun PingNavHost() {
             }
             composable(
                 Routes.SAVED_PLACES,
-                enterTransition = { tabEnter(AnimatedContentTransitionScope.SlideDirection.Left) },
-                exitTransition = { tabExit(AnimatedContentTransitionScope.SlideDirection.Left) },
+                enterTransition = tabEnter,
+                exitTransition = tabExit,
             ) {
                 SavedPlacesScreen(onBack = { nav.popBackStack() })
             }
@@ -186,8 +207,8 @@ fun PingNavHost() {
             }
             composable(
                 Routes.CALENDAR,
-                enterTransition = { tabEnter(AnimatedContentTransitionScope.SlideDirection.Left) },
-                exitTransition = { tabExit(AnimatedContentTransitionScope.SlideDirection.Left) },
+                enterTransition = tabEnter,
+                exitTransition = tabExit,
             ) {
                 CalendarScreen(
                     onBack = { nav.popBackStack() },
@@ -196,8 +217,8 @@ fun PingNavHost() {
             }
             composable(
                 Routes.AUTOMATIONS,
-                enterTransition = { tabEnter(AnimatedContentTransitionScope.SlideDirection.Left) },
-                exitTransition = { tabExit(AnimatedContentTransitionScope.SlideDirection.Left) },
+                enterTransition = tabEnter,
+                exitTransition = tabExit,
             ) {
                 AutomationsScreen()
             }
