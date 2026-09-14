@@ -76,7 +76,7 @@ private val AmoledColorScheme = DarkColorScheme.copy(
 @Composable
 fun PingTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val isDark = when (themeMode) {

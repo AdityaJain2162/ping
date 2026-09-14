@@ -68,6 +68,11 @@
     <string name="add_trigger_mode_and">Require both</string>
     <string name="add_trigger_mode_or_desc">Reminder fires when the time arrives OR when you reach the location — whichever comes first.</string>
     <string name="add_trigger_mode_and_desc">Reminder fires only when you are at the location AND the time window is active.</string>
+
+    <!-- Location settings -->
+    <string name="location_off_title">Location is turned off</string>
+    <string name="location_off_message">Location services are disabled. Enable them to use location-based reminders and pick your current location.</string>
+    <string name="location_off_open_settings">Open location settings</string>
     <string name="add_title_label">Title</string>
     <string name="add_pick_current">Use current location</string>
     <string name="add_pick_map">Pick on map</string>
