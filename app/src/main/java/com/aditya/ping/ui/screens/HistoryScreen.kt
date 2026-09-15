@@ -30,6 +30,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,6 +49,7 @@ import com.aditya.ping.ui.theme.TimestampStyle
 @Composable
 fun HistoryScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
     val repo = remember { ReminderRepository(PingDatabase.get(context).reminderDao()) }
     val vm: HomeViewModel = viewModel(factory = HomeViewModel.Factory(repo, context.applicationContext as Context))
     val history by vm.history.collectAsStateWithLifecycle()
@@ -56,42 +59,43 @@ fun HistoryScreen(onBack: () -> Unit) {
             TopAppBar(
                 title = { Text(stringResource(R.string.history_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
             )
         },
     ) { inner ->
-        if (history.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(inner),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Filled.CheckCircle,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 12.dp),
-                    )
-                    Text(
-                        text = stringResource(R.string.history_empty),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+        Column(modifier = Modifier.fillMaxSize().padding(inner)) {
+            if (history.isEmpty()) {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Filled.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 12.dp),
+                        )
+                        Text(
+                            text = stringResource(R.string.history_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-            }
-            Box(modifier = Modifier.padding(inner).fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
-                BannerAd(modifier = Modifier.fillMaxWidth().padding(16.dp))
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(inner),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(history, key = { it.id }) { reminder ->
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(history, key = { it.id }) { reminder ->
                     val completedAt = reminder.completedAt ?: reminder.createdAt
                     Column(
                         modifier = Modifier
@@ -132,12 +136,10 @@ fun HistoryScreen(onBack: () -> Unit) {
                         )
                     }
                 }
-                // Banner ad at bottom of history
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    BannerAd()
                 }
             }
+            // Pinned banner ad — always visible
+            BannerAd()
         }
     }
 }

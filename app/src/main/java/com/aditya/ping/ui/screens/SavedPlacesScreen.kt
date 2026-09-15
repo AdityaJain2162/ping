@@ -42,6 +42,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -61,6 +63,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun SavedPlacesScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
     val appContext = context.applicationContext
     val repo = remember { SavedPlaceRepository.from(context) }
     val vm: SavedPlacesViewModel = viewModel(factory = SavedPlacesViewModel.Factory(repo, appContext))
@@ -99,7 +102,10 @@ fun SavedPlacesScreen(onBack: () -> Unit) {
             TopAppBar(
                 title = { Text(stringResource(R.string.saved_places_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
                     }
                 },
@@ -133,6 +139,7 @@ fun SavedPlacesScreen(onBack: () -> Unit) {
             locationSearchResults.forEach { result ->
                 OutlinedButton(
                     onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         pendingLocation = Triple(result.lat, result.lng, result.label)
                         locationSearchQuery = ""
                         locationSearchResults = emptyList()
@@ -146,6 +153,7 @@ fun SavedPlacesScreen(onBack: () -> Unit) {
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedButton(onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     if (!PermissionUtil.hasFineLocation(context)) {
                         locationLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
                     } else {
@@ -179,6 +187,7 @@ fun SavedPlacesScreen(onBack: () -> Unit) {
             )
             OutlinedButton(
                 onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     val loc = pendingLocation ?: return@OutlinedButton
                     val radius = newRadius.toIntOrNull() ?: 150
                     vm.add(newName, loc.first, loc.second, loc.third, radius)
@@ -234,7 +243,10 @@ fun SavedPlacesScreen(onBack: () -> Unit) {
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
-                                IconButton(onClick = { vm.delete(place.id) }) {
+                                IconButton(onClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    vm.delete(place.id)
+                                }) {
                                     Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.add_cancel))
                                 }
                             }

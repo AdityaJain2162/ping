@@ -47,6 +47,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -73,6 +75,7 @@ fun AddEditScreen(
     sharedText: String? = null,
 ) {
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
     val appContext = context.applicationContext
     val repo = remember { ReminderRepository.from(context) }
     val vm: AddEditViewModel = viewModel(factory = AddEditViewModel.Factory(repo, appContext))
@@ -270,7 +273,10 @@ fun AddEditScreen(
                         ).forEach { (type, label) ->
                             androidx.compose.material3.FilterChip(
                                 selected = state.antiSleepDismiss == type,
-                                onClick = { vm.onAntiSleepChange(type) },
+                                onClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    vm.onAntiSleepChange(type)
+                                },
                                 label = { Text(label, style = MaterialTheme.typography.labelSmall) },
                             )
                         }
@@ -294,7 +300,10 @@ fun AddEditScreen(
                     recurrenceOptions.take(3).forEach { (type, label) ->
                         FilterChip(
                             selected = state.recurrenceType == type,
-                            onClick = { vm.onRecurrenceTypeChange(type) },
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                vm.onRecurrenceTypeChange(type)
+                            },
                             label = { Text(label) },
                         )
                     }
@@ -306,7 +315,10 @@ fun AddEditScreen(
                     recurrenceOptions.drop(3).forEach { (type, label) ->
                         FilterChip(
                             selected = state.recurrenceType == type,
-                            onClick = { vm.onRecurrenceTypeChange(type) },
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                vm.onRecurrenceTypeChange(type)
+                            },
                             label = { Text(label) },
                         )
                     }
@@ -408,12 +420,18 @@ fun AddEditScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = state.triggerType == 0,
-                    onClick = { vm.onTriggerChange(0) },
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        vm.onTriggerChange(0)
+                    },
                     label = { Text(stringResource(R.string.add_trigger_arrive)) },
                 )
                 FilterChip(
                     selected = state.triggerType == 1,
-                    onClick = { vm.onTriggerChange(1) },
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        vm.onTriggerChange(1)
+                    },
                     label = { Text(stringResource(R.string.add_trigger_leave)) },
                 )
             }
@@ -443,7 +461,10 @@ fun AddEditScreen(
                 quickActions.take(4).forEach { (type, label) ->
                     FilterChip(
                         selected = state.quickActionType == type,
-                        onClick = { vm.onQuickActionTypeChange(type) },
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            vm.onQuickActionTypeChange(type)
+                        },
                         label = { Text(label) },
                     )
                 }
@@ -452,7 +473,10 @@ fun AddEditScreen(
                 quickActions.drop(4).forEach { (type, label) ->
                     FilterChip(
                         selected = state.quickActionType == type,
-                        onClick = { vm.onQuickActionTypeChange(type) },
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            vm.onQuickActionTypeChange(type)
+                        },
                         label = { Text(label) },
                     )
                 }
@@ -496,12 +520,18 @@ fun AddEditScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = state.triggerMode == 0,
-                        onClick = { vm.onTriggerModeChange(0) },
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            vm.onTriggerModeChange(0)
+                        },
                         label = { Text(stringResource(R.string.add_trigger_mode_or)) },
                     )
                     FilterChip(
                         selected = state.triggerMode == 1,
-                        onClick = { vm.onTriggerModeChange(1) },
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            vm.onTriggerModeChange(1)
+                        },
                         label = { Text(stringResource(R.string.add_trigger_mode_and)) },
                     )
                 }
@@ -517,11 +547,17 @@ fun AddEditScreen(
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                 Button(
-                    onClick = vm::save,
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        vm.save()
+                    },
                     enabled = !state.saving && state.title.isNotBlank(),
                     modifier = Modifier.weight(1f),
                 ) { Text(stringResource(R.string.add_save)) }
-                OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f).testTag("cancelButton")) {
+                OutlinedButton(onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onCancel()
+                }, modifier = Modifier.weight(1f).testTag("cancelButton")) {
                     Text(stringResource(R.string.add_cancel))
                 }
             }

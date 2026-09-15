@@ -39,6 +39,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,6 +53,7 @@ import com.aditya.ping.ui.components.BannerAd
 @Composable
 fun ListsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
     val appContext = context.applicationContext
     val repo = remember { ReminderListRepository.from(context) }
     val vm: ListsViewModel = viewModel(factory = ListsViewModel.Factory(repo, appContext))
@@ -75,7 +78,10 @@ fun ListsScreen(onBack: () -> Unit) {
             TopAppBar(
                 title = { Text(stringResource(R.string.lists_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
                     }
                 },
@@ -124,6 +130,7 @@ fun ListsScreen(onBack: () -> Unit) {
 
             OutlinedButton(
                 onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     vm.add(newName, selectedColor)
                     newName = ""
                 },
@@ -135,7 +142,7 @@ fun ListsScreen(onBack: () -> Unit) {
 
             if (lists.isEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -143,9 +150,11 @@ fun ListsScreen(onBack: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                BannerAd(modifier = Modifier.fillMaxWidth().padding(16.dp))
             } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     items(lists, key = { it.id }) { list ->
                         Card(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
@@ -167,19 +176,19 @@ fun ListsScreen(onBack: () -> Unit) {
                                     style = MaterialTheme.typography.titleMedium,
                                     modifier = Modifier.weight(1f),
                                 )
-                                IconButton(onClick = { vm.delete(list.id) }) {
+                                IconButton(onClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    vm.delete(list.id)
+                                }) {
                                     Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.add_cancel))
                                 }
                             }
                         }
                     }
-                    // Banner ad at bottom of lists
-                    item {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        BannerAd()
-                    }
                 }
             }
+            // Pinned banner ad — always visible
+            BannerAd()
         }
     }
 }

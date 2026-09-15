@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +35,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -49,6 +53,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
     val themeRepo = remember { ThemeRepository(context) }
     val vm: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory(themeRepo))
     val current by vm.themeMode.collectAsStateWithLifecycle()
@@ -65,31 +70,49 @@ fun SettingsScreen(onBack: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(inner)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(inner),
         ) {
-            Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleMedium)
-            Column(modifier = Modifier.selectableGroup()) {
-                ThemeOption(
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleMedium)
+                Column(modifier = Modifier.selectableGroup()) {
+                    ThemeOption(
                     label = stringResource(R.string.settings_theme_system),
                     selected = current == ThemeMode.SYSTEM,
-                    onSelect = { vm.setTheme(ThemeMode.SYSTEM) },
+                    onSelect = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        vm.setTheme(ThemeMode.SYSTEM)
+                    },
                 )
                 ThemeOption(
                     label = stringResource(R.string.settings_theme_light),
                     selected = current == ThemeMode.LIGHT,
-                    onSelect = { vm.setTheme(ThemeMode.LIGHT) },
+                    onSelect = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        vm.setTheme(ThemeMode.LIGHT)
+                    },
                 )
                 ThemeOption(
                     label = stringResource(R.string.settings_theme_dark),
                     selected = current == ThemeMode.DARK,
-                    onSelect = { vm.setTheme(ThemeMode.DARK) },
+                    onSelect = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        vm.setTheme(ThemeMode.DARK)
+                    },
                 )
                 ThemeOption(
                     label = stringResource(R.string.settings_theme_amoled),
                     selected = current == ThemeMode.AMOLED,
-                    onSelect = { vm.setTheme(ThemeMode.AMOLED) },
+                    onSelect = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        vm.setTheme(ThemeMode.AMOLED)
+                    },
                 )
             }
 
@@ -103,7 +126,10 @@ fun SettingsScreen(onBack: () -> Unit) {
                 Text(stringResource(R.string.quiet_hours_enable), style = MaterialTheme.typography.bodyLarge)
                 Switch(
                     checked = quietEnabled,
-                    onCheckedChange = { scope.launch { quietHours.setEnabled(it) } },
+                    onCheckedChange = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        scope.launch { quietHours.setEnabled(it) }
+                    },
                 )
             }
             if (quietEnabled) {
@@ -114,6 +140,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 ) {
                     Text(stringResource(R.string.quiet_hours_start), style = MaterialTheme.typography.bodyMedium)
                     TextButton(onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         TimePickerDialog(context, { _, h, m ->
                             scope.launch { quietHours.setStartMinutes(h * 60 + m) }
                         }, quietStart / 60, quietStart % 60, true).show()
@@ -128,6 +155,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 ) {
                     Text(stringResource(R.string.quiet_hours_end), style = MaterialTheme.typography.bodyMedium)
                     TextButton(onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         TimePickerDialog(context, { _, h, m ->
                             scope.launch { quietHours.setEndMinutes(h * 60 + m) }
                         }, quietEnd / 60, quietEnd % 60, true).show()
@@ -148,6 +176,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 androidx.compose.material3.OutlinedButton(
                     onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         scope.launch {
                             val manager = ImportExportManager(context)
                             val json = manager.export()
@@ -167,6 +196,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 }
                 androidx.compose.material3.OutlinedButton(
                     onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         scope.launch {
                             val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                             val clip = clipboard.primaryClip
@@ -209,6 +239,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             } else {
                 Button(
                     onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         val intent = Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
                             data = android.net.Uri.parse("package:${context.packageName}")
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -237,6 +268,8 @@ fun SettingsScreen(onBack: () -> Unit) {
             )
 
             Spacer(Modifier.height(24.dp))
+            }
+            // Pinned banner ad — always visible
             BannerAd()
         }
     }

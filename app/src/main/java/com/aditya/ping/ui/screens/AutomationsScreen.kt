@@ -53,6 +53,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -74,6 +76,7 @@ fun AutomationsScreen() {
     val vm: AutomationsViewModel = viewModel(factory = AutomationsViewModel.Factory(repo))
     val automations by vm.automations.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (automations.isEmpty()) {
@@ -118,7 +121,10 @@ fun AutomationsScreen() {
         }
 
         FloatingActionButton(
-            onClick = { showAddDialog = true },
+            onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                showAddDialog = true
+            },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
         ) {
             Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.automation_add))
@@ -142,6 +148,7 @@ private fun AutomationCard(
     onToggle: (Boolean) -> Unit,
     onDelete: () -> Unit,
 ) {
+    val haptics = LocalHapticFeedback.current
     val (triggerIcon, triggerLabel) = triggerInfo(automation.triggerType)
     val actionLabel = actionLabel(automation.actionType)
 
@@ -165,8 +172,14 @@ private fun AutomationCard(
                 Text(automation.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                 Text("$triggerLabel → $actionLabel", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Switch(checked = automation.enabled, onCheckedChange = onToggle)
-            IconButton(onClick = onDelete) {
+            Switch(checked = automation.enabled, onCheckedChange = {
+                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onToggle(it)
+            })
+            IconButton(onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                onDelete()
+            }) {
                 Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -179,6 +192,7 @@ private fun AddAutomationDialog(
     onDismiss: () -> Unit,
     onSave: (AutomationEntity) -> Unit,
 ) {
+    val haptics = LocalHapticFeedback.current
     var name by remember { mutableStateOf("") }
     var triggerType by remember { mutableIntStateOf(2) } // default: wifi connect
     var triggerData by remember { mutableStateOf("") }
@@ -275,7 +289,10 @@ private fun AddAutomationDialog(
                         triggers.forEach { (type, label) ->
                             androidx.compose.material3.FilterChip(
                                 selected = triggerType == type,
-                                onClick = { triggerType = type },
+                                onClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    triggerType = type
+                                },
                                 label = { Text(label, style = MaterialTheme.typography.labelSmall) },
                             )
                         }
@@ -305,7 +322,10 @@ private fun AddAutomationDialog(
                         actions.forEach { (type, label) ->
                             androidx.compose.material3.FilterChip(
                                 selected = actionType == type,
-                                onClick = { actionType = type },
+                                onClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    actionType = type
+                                },
                                 label = { Text(label, style = MaterialTheme.typography.labelSmall) },
                             )
                         }
@@ -337,13 +357,17 @@ private fun AddAutomationDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    TextButton(onClick = onDismiss) {
+                    TextButton(onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onDismiss()
+                    }) {
                         Text(stringResource(R.string.add_cancel))
                     }
                     Spacer(Modifier.width(8.dp))
                     TextButton(
                         onClick = {
                             if (name.isNotBlank()) {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                 onSave(
                                     AutomationEntity(
                                         name = name.trim(),
