@@ -16,8 +16,19 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.aditya.ping.androidtest.PingCucumberRunner"
+        testInstrumentationRunnerArguments(
+            mapOf(
+                "optionsAnnotationPackage" to "com.aditya.ping.androidtest",
+            )
+        )
         vectorDrawables { useSupportLibrary = true }
+    }
+
+    sourceSets {
+        getByName("androidTest") {
+            assets.srcDirs("src/androidTest/assets")
+        }
     }
 
     flavorDimensions += "distribution"
@@ -91,4 +102,17 @@ dependencies {
     "playstoreImplementation"(libs.play.services.ads)
 
     debugImplementation(libs.androidx.ui.tooling)
+
+    // Cucumber + Espresso + Compose UI testing
+    androidTestImplementation(libs.cucumber.android)
+    androidTestImplementation(libs.cucumber.picocontainer)
+    androidTestImplementation(libs.cucumber.gherkin.messages)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

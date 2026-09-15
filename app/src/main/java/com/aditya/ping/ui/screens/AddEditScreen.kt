@@ -45,6 +45,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -450,7 +451,7 @@ fun AddEditScreen(
                     enabled = !state.saving && state.title.isNotBlank(),
                     modifier = Modifier.weight(1f),
                 ) { Text(stringResource(R.string.add_save)) }
-                OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
+                OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f).testTag("cancelButton")) {
                     Text(stringResource(R.string.add_cancel))
                 }
             }
