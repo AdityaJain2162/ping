@@ -123,6 +123,7 @@
     <string name="automation_edit">Edit automation</string>
     <string name="automation_clone">Clone automation</string>
     <string name="automation_name">Automation name</string>
+    <string name="automation_action_data_required">Action data is required for this action type</string>
     <string name="automation_perm_call_title">Call permission needed</string>
     <string name="automation_perm_call_msg">Grant Call Phone permission so this automation can place calls automatically when triggered. Without it, the dialer will open and you\'ll need to tap Call manually.</string>
     <string name="automation_perm_sms_title">SMS permission needed</string>

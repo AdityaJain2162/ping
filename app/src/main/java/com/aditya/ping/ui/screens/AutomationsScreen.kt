@@ -235,6 +235,11 @@ private fun AddAutomationDialog(
     var actionMessage by remember { mutableStateOf(automation?.actionMessage ?: "") }
     var permDenied by remember { mutableStateOf(false) }
 
+    // Validation: action types that require actionData
+    val actionDataRequired = actionType in listOf(1, 2, 3, 4, 5, 6, 10, 11)
+    val isActionDataValid = !actionDataRequired || actionData.isNotBlank()
+    val canSave = name.isNotBlank() && isActionDataValid
+
     // Permission launcher for CALL_PHONE / SEND_SMS
     val permLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
@@ -432,6 +437,10 @@ private fun AddAutomationDialog(
                             onValueChange = { actionData = it },
                             label = { Text(actionHint(actionType)) },
                             singleLine = true,
+                            isError = actionDataRequired && actionData.isBlank(),
+                            supportingText = if (actionDataRequired && actionData.isBlank()) {
+                                { Text(stringResource(R.string.automation_action_data_required), style = MaterialTheme.typography.bodySmall) }
+                            } else null,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -461,7 +470,7 @@ private fun AddAutomationDialog(
                     Spacer(Modifier.width(8.dp))
                     TextButton(
                         onClick = {
-                            if (name.isNotBlank()) {
+                            if (canSave) {
                                 haptics.heavy()
                                 onSave(
                                     AutomationEntity(
@@ -478,7 +487,7 @@ private fun AddAutomationDialog(
                                 )
                             }
                         },
-                        enabled = name.isNotBlank(),
+                        enabled = canSave,
                     ) { Text(stringResource(R.string.add_save)) }
                 }
             }
