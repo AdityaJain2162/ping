@@ -74,6 +74,8 @@ import com.aditya.ping.ui.components.LocationPickerField
 fun AutomationsScreen() {
     val context = LocalContext.current
     val repo = remember { AutomationRepository.from(context) }
+    val savedPlaceRepo = remember { com.aditya.ping.data.SavedPlaceRepository.from(context) }
+    val savedPlaces by savedPlaceRepo.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val vm: AutomationsViewModel = viewModel(factory = AutomationsViewModel.Factory(repo))
     val automations by vm.automations.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
@@ -142,6 +144,7 @@ fun AutomationsScreen() {
                 vm.add(automation)
                 showAddDialog = false
             },
+            savedPlaces = savedPlaces,
         )
     }
 
@@ -153,6 +156,7 @@ fun AutomationsScreen() {
                 vm.update(updated)
                 editingAutomation = null
             },
+            savedPlaces = savedPlaces,
         )
     }
 }
@@ -219,6 +223,7 @@ private fun AddAutomationDialog(
     onDismiss: () -> Unit,
     onSave: (AutomationEntity) -> Unit,
     automation: AutomationEntity? = null,
+    savedPlaces: List<com.aditya.ping.data.SavedPlaceEntity> = emptyList(),
 ) {
     val haptics = LocalHaptics.current
     val context = LocalContext.current
@@ -359,6 +364,7 @@ private fun AddAutomationDialog(
                             onPicked = { lat, lng, label ->
                                 triggerData = "%.6f,%.6f,%s".format(lat, lng, label)
                             },
+                            savedPlaces = savedPlaces,
                         )
                     } else {
                         OutlinedTextField(

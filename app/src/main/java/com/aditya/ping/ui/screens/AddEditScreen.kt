@@ -95,6 +95,8 @@ fun AddEditScreen(
     val haptics = LocalHaptics.current
     val appContext = context.applicationContext
     val repo = remember { ReminderRepository.from(context) }
+    val savedPlaceRepo = remember { com.aditya.ping.data.SavedPlaceRepository.from(context) }
+    val savedPlaces by savedPlaceRepo.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val vm: AddEditViewModel = viewModel(factory = AddEditViewModel.Factory(repo, appContext))
     val state by vm.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -450,6 +452,7 @@ fun AddEditScreen(
                     lng = state.lng,
                     label = state.addressLabel,
                     onPicked = { lat, lng, label -> vm.onLocation(lat, lng, label) },
+                    savedPlaces = savedPlaces,
                 )
                 if (state.lat != 0.0 || state.lng != 0.0) {
                     Text(stringResource(R.string.add_trigger_label), style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp))

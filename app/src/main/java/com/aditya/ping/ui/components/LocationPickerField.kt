@@ -11,10 +11,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -35,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.aditya.ping.R
+import com.aditya.ping.data.SavedPlaceEntity
 import com.aditya.ping.ui.theme.LocalHaptics
 import com.aditya.ping.util.GeoCoderUtil
 import com.aditya.ping.util.GeoResult
@@ -46,11 +52,13 @@ import kotlinx.coroutines.withContext
 import androidx.compose.runtime.rememberCoroutineScope
 
 /**
- * Reusable location picker with address search and current-location button.
+ * Reusable location picker with address search, current-location button,
+ * and optional saved-places quick-pick chips.
  *
  * @param lat       Current latitude (0.0 if unset).
  * @param lng       Current longitude (0.0 if unset).
  * @param label     Current human-readable label for the selected location.
+ * @param savedPlaces  Saved places to show as quick-pick chips (empty by default).
  * @param onPicked  Called with (lat, lng, label) when the user picks a location.
  */
 @Composable
@@ -60,6 +68,7 @@ fun LocationPickerField(
     label: String,
     onPicked: (lat: Double, lng: Double, label: String) -> Unit,
     modifier: Modifier = Modifier,
+    savedPlaces: List<SavedPlaceEntity> = emptyList(),
 ) {
     val context = LocalContext.current
     val haptics = LocalHaptics.current
@@ -91,6 +100,31 @@ fun LocationPickerField(
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
+        if (savedPlaces.isNotEmpty()) {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+            ) {
+                items(savedPlaces, key = { it.id }) { place ->
+                    AssistChip(
+                        onClick = {
+                            haptics.tap()
+                            onPicked(place.lat, place.lng, place.name)
+                        },
+                        label = { Text(place.name, style = MaterialTheme.typography.labelMedium) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Bookmark,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        },
+                        colors = AssistChipDefaults.assistChipColors(),
+                    )
+                }
+            }
+        }
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
