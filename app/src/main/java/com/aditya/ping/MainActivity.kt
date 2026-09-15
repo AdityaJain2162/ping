@@ -12,15 +12,19 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.core.content.ContextCompat
+import com.aditya.ping.data.OnboardingRepository
 import com.aditya.ping.data.ThemePrefs
 import com.aditya.ping.data.ThemeRepository
 import com.aditya.ping.ui.navigation.PingNavHost
 import com.aditya.ping.ui.navigation.Routes
+import com.aditya.ping.ui.screens.OnboardingScreen
 import com.aditya.ping.ui.theme.PingTheme
 import com.aditya.ping.ui.theme.rememberHapticController
 import com.aditya.ping.widget.DueTodayWidgetProvider
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
@@ -50,6 +54,8 @@ class MainActivity : ComponentActivity() {
         // theme loading and eliminates the jittery theme transition.
         val themeRepo = ThemeRepository(this)
         val initialPrefs: ThemePrefs = runBlocking { themeRepo.themePrefs.first() }
+        val onboardingRepo = OnboardingRepository(this)
+        val initialOnboardingDone = runBlocking { onboardingRepo.isCompleted.first() }
 
         setContent {
             val prefs by themeRepo.themePrefs.collectAsState(initial = initialPrefs)
@@ -57,6 +63,8 @@ class MainActivity : ComponentActivity() {
                 enabled = prefs.hapticFeedback,
                 intensityName = prefs.hapticIntensity,
             )
+            val onboardingDone by onboardingRepo.isCompleted.collectAsState(initial = initialOnboardingDone)
+            val scope = rememberCoroutineScope()
 
             PingTheme(
                 themeMode = prefs.mode,
@@ -65,10 +73,18 @@ class MainActivity : ComponentActivity() {
                 animationsEnabled = prefs.animationsEnabled,
                 hapticController = hapticController,
             ) {
-                PingNavHost(
-                    startRoute = if (quickAdd || sharedText != null) Routes.ADD else Routes.HOME,
-                    sharedText = sharedText,
-                )
+                if (!onboardingDone && !quickAdd && sharedText == null) {
+                    OnboardingScreen(
+                        onComplete = {
+                            scope.launch { onboardingRepo.setCompleted() }
+                        },
+                    )
+                } else {
+                    PingNavHost(
+                        startRoute = if (quickAdd || sharedText != null) Routes.ADD else Routes.HOME,
+                        sharedText = sharedText,
+                    )
+                }
             }
         }
     }
