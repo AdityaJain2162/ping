@@ -13,12 +13,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.core.content.ContextCompat
+import com.aditya.ping.data.ThemePrefs
 import com.aditya.ping.data.ThemeRepository
 import com.aditya.ping.ui.navigation.PingNavHost
 import com.aditya.ping.ui.navigation.Routes
 import com.aditya.ping.ui.theme.PingTheme
 import com.aditya.ping.ui.theme.rememberHapticController
 import com.aditya.ping.widget.DueTodayWidgetProvider
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,9 +43,16 @@ class MainActivity : ComponentActivity() {
             intent.getStringExtra(Intent.EXTRA_TEXT)
         } else null
 
+        // Read theme prefs synchronously to avoid the dark→light flash on launch.
+        // DataStore loads asynchronously, so the initial render would use the default
+        // (SYSTEM) theme, then flash to the saved theme when DataStore resolves.
+        // runBlocking on first() blocks briefly during onCreate — acceptable for
+        // theme loading and eliminates the jittery theme transition.
+        val themeRepo = ThemeRepository(this)
+        val initialPrefs: ThemePrefs = runBlocking { themeRepo.themePrefs.first() }
+
         setContent {
-            val themeRepo = remember { ThemeRepository(this) }
-            val prefs by themeRepo.themePrefs.collectAsState(initial = com.aditya.ping.data.ThemePrefs())
+            val prefs by themeRepo.themePrefs.collectAsState(initial = initialPrefs)
             val hapticController = rememberHapticController(
                 enabled = prefs.hapticFeedback,
                 intensityName = prefs.hapticIntensity,
