@@ -5,6 +5,7 @@ object Routes {
     const val ADD = "add"
     const val EDIT = "edit/{id}"
     const val SETTINGS = "settings"
+    const val ABOUT = "about"
     const val SAVED_PLACES = "saved_places"
     const val CALENDAR = "calendar"
     const val AUTOMATIONS = "automations"

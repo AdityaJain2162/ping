@@ -57,6 +57,7 @@ import com.aditya.ping.ui.screens.CalendarScreen
 import com.aditya.ping.ui.screens.HistoryScreen
 import com.aditya.ping.ui.screens.HomeScreen
 import com.aditya.ping.ui.screens.SavedPlacesScreen
+import com.aditya.ping.ui.screens.AboutScreen
 import com.aditya.ping.ui.screens.SettingsScreen
 import kotlinx.coroutines.launch
 
@@ -206,7 +207,13 @@ fun PingNavHost(startRoute: String = Routes.HOME, sharedText: String? = null) {
                 )
             }
             composable(Routes.SETTINGS) {
-                SettingsScreen(onBack = { nav.popBackStack() })
+                SettingsScreen(
+                    onBack = { nav.popBackStack() },
+                    onAbout = { nav.navigate(Routes.ABOUT) },
+                )
+            }
+            composable(Routes.ABOUT) {
+                AboutScreen(onBack = { nav.popBackStack() })
             }
             composable(Routes.HISTORY) {
                 HistoryScreen(onBack = { nav.popBackStack() })

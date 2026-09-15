@@ -34,9 +34,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Feedback
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Card
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -69,7 +72,10 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onAbout: () -> Unit = {},
+) {
     val context = LocalContext.current
     val haptics = LocalHaptics.current
     val themeRepo = remember { ThemeRepository(context) }
@@ -391,25 +397,44 @@ fun SettingsScreen(onBack: () -> Unit) {
 
             Spacer(Modifier.height(16.dp))
             Text(stringResource(R.string.settings_about), style = MaterialTheme.typography.titleMedium)
-            Text(
-                stringResource(R.string.settings_about_body),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            // App version
-            val versionName = remember {
-                try {
-                    context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
-                } catch (e: Exception) { "" }
+            // Navigate to full About screen
+            Card(
+                onClick = {
+                    haptics.tap()
+                    onAbout()
+                },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Filled.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                    Spacer(Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.settings_about),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Text(
+                            text = stringResource(R.string.settings_about_body),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-            if (versionName.isNotBlank()) {
-                Text(
-                    text = stringResource(R.string.settings_version, versionName),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
+            // Quick actions: Rate, Share, Feedback
             Row(
                 modifier = Modifier.padding(top = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -462,7 +487,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                     try {
                         context.startActivity(intent)
                     } catch (e: Exception) {
-                        // No email app — fall back to chooser
                         context.startActivity(Intent.createChooser(intent, context.getString(R.string.settings_feedback)).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         })
