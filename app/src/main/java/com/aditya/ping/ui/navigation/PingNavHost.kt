@@ -9,6 +9,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -46,6 +47,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.aditya.ping.R
+import com.aditya.ping.ui.components.BannerAd
 import com.aditya.ping.ui.screens.AddEditScreen
 import com.aditya.ping.ui.screens.AutomationsScreen
 import com.aditya.ping.ui.screens.CalendarScreen
@@ -152,27 +154,31 @@ fun PingNavHost(startRoute: String = Routes.HOME, sharedText: String? = null) {
             exitTransition = { fadeOut() },
         ) {
             composable(Routes.HOME) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
-                ) { page ->
-                    when (tabRoutes[page]) {
-                        Routes.HOME -> HomeScreen(
-                            onAdd = { nav.navigate(Routes.ADD) },
-                            onEdit = { id -> nav.navigate(Routes.edit(id)) },
-                            onSettings = { nav.navigate(Routes.SETTINGS) },
-                            onSavedPlaces = { scope.launch { pagerState.animateScrollToPage(1) } },
-                            onLists = { nav.navigate(Routes.LISTS) },
-                            onCalendar = { scope.launch { pagerState.animateScrollToPage(2) } },
-                            onHistory = { nav.navigate(Routes.HISTORY) },
-                        )
-                        Routes.SAVED_PLACES -> SavedPlacesScreen(onBack = { scope.launch { pagerState.animateScrollToPage(0) } })
-                        Routes.CALENDAR -> CalendarScreen(
-                            onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
-                            onEdit = { id -> nav.navigate(Routes.edit(id)) },
-                        )
-                        Routes.AUTOMATIONS -> AutomationsScreen()
+                Column(modifier = Modifier.fillMaxSize()) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.weight(1f),
+                    ) { page ->
+                        when (tabRoutes[page]) {
+                            Routes.HOME -> HomeScreen(
+                                onAdd = { nav.navigate(Routes.ADD) },
+                                onEdit = { id -> nav.navigate(Routes.edit(id)) },
+                                onSettings = { nav.navigate(Routes.SETTINGS) },
+                                onSavedPlaces = { scope.launch { pagerState.animateScrollToPage(1) } },
+                                onLists = { nav.navigate(Routes.LISTS) },
+                                onCalendar = { scope.launch { pagerState.animateScrollToPage(2) } },
+                                onHistory = { nav.navigate(Routes.HISTORY) },
+                            )
+                            Routes.SAVED_PLACES -> SavedPlacesScreen(onBack = { scope.launch { pagerState.animateScrollToPage(0) } })
+                            Routes.CALENDAR -> CalendarScreen(
+                                onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
+                                onEdit = { id -> nav.navigate(Routes.edit(id)) },
+                            )
+                            Routes.AUTOMATIONS -> AutomationsScreen()
+                        }
                     }
+                    // Pinned banner ad — always visible across all 4 main tabs
+                    BannerAd()
                 }
             }
             composable(Routes.ADD) {

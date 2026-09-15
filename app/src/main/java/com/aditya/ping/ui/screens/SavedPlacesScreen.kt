@@ -203,7 +203,6 @@ fun SavedPlacesScreen(onBack: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                BannerAd(modifier = Modifier.fillMaxWidth().padding(16.dp))
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(places, key = { it.id }) { place ->
@@ -240,11 +239,6 @@ fun SavedPlacesScreen(onBack: () -> Unit) {
                                 }
                             }
                         }
-                    }
-                    // Banner ad at bottom of saved places
-                    item {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        BannerAd()
                     }
                 }
             }

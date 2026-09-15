@@ -101,7 +101,6 @@ fun AutomationsScreen() {
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
-            BannerAd(modifier = Modifier.fillMaxWidth().padding(16.dp).align(Alignment.BottomCenter))
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -114,11 +113,6 @@ fun AutomationsScreen() {
                         onToggle = { vm.toggleEnabled(automation.id, it) },
                         onDelete = { vm.delete(automation.id) },
                     )
-                }
-                // Banner ad at bottom of automations list
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    BannerAd()
                 }
             }
         }

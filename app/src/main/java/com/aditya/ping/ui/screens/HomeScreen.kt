@@ -161,7 +161,6 @@ fun HomeScreen(
 
             if (reminders.isEmpty() && !isSearching) {
                 EmptyState(onAdd = onAdd)
-                BannerAd(modifier = Modifier.fillMaxWidth().padding(16.dp))
             } else if (isSearching) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -184,7 +183,6 @@ fun HomeScreen(
                             onClick = { onEdit(r.id) },
                         )
                     }
-                    item { BannerAd() }
                 }
             } else {
                 LazyColumn(
@@ -220,7 +218,6 @@ fun HomeScreen(
                             )
                         }
                     }
-                    item { BannerAd() }
                 }
             }
         }

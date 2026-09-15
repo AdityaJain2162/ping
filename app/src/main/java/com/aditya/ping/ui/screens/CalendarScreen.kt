@@ -366,11 +366,5 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
                 }
             }
         }
-
-        // Banner ad at bottom of calendar
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-            BannerAd()
-        }
     }
 }
