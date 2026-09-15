@@ -13,6 +13,11 @@ workManager = "2.9.1"
 datastore = "1.1.1"
 material = "1.12.0"
 playServicesAds = "23.4.0"
+cucumber = "7.18.1"
+espresso = "3.7.0"
+testCore = "1.6.1"
+testExtJunit = "1.2.1"
+uiTestJunit4 = "1.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -36,6 +41,16 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "playServicesAds" }
+cucumber-android = { group = "io.cucumber", name = "cucumber-android", version.ref = "cucumber" }
+cucumber-picocontainer = { group = "io.cucumber", name = "cucumber-picocontainer", version.ref = "cucumber" }
+cucumber-gherkin-messages = { group = "io.cucumber", name = "cucumber-gherkin-messages", version.ref = "cucumber" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "testCore" }
+androidx-test-rules = { group = "androidx.test", name = "rules", version.ref = "testCore" }
+androidx-test-core = { group = "androidx.test", name = "core", version.ref = "testCore" }
+androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "testExtJunit" }
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

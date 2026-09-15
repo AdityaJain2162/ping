@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavType
@@ -77,7 +78,7 @@ fun PingNavHost() {
                             transitionSpec = { fadeIn(spring()) togetherWith fadeOut(spring()) },
                             label = "titleCrossfade",
                         ) { page ->
-                            Text(tabTitle(tabRoutes[page]))
+                            Text(tabTitle(tabRoutes[page]), modifier = Modifier.testTag("topBarTitle"))
                         }
                     },
                     actions = {
@@ -107,6 +108,7 @@ fun PingNavHost() {
                         NavigationBarItem(
                             selected = selected,
                             onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                            modifier = Modifier.testTag("tab_${tabRoutes[index]}"),
                             icon = {
                                 Icon(
                                     icon,
@@ -128,6 +130,7 @@ fun PingNavHost() {
             ) {
                 FloatingActionButton(
                     onClick = { nav.navigate(Routes.ADD) },
+                    modifier = Modifier.testTag("fab"),
                     shape = MaterialTheme.shapes.extraLarge,
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
