@@ -269,6 +269,25 @@ fun ReminderCard(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
+                                // Time-remaining badge for reminders due within the current week
+                                if (!isOverdue) {
+                                    UiFormats.formatTimeRemaining(context, due)?.let { remaining ->
+                                        Spacer(Modifier.width(8.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(MaterialTheme.shapes.extraSmall)
+                                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                        ) {
+                                            Text(
+                                                text = remaining,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.Bold,
+                                            )
+                                        }
+                                    }
+                                }
                             }
                             Spacer(Modifier.height(2.dp))
                         }
