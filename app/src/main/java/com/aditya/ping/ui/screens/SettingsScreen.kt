@@ -1,6 +1,8 @@
 package com.aditya.ping.ui.screens
 
 import android.app.TimePickerDialog
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -183,6 +186,46 @@ fun SettingsScreen(onBack: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            Spacer(Modifier.height(16.dp))
+
+            // Battery optimization
+            Text(stringResource(R.string.settings_battery), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.settings_battery_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            val powerManager = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+            val isIgnoring = powerManager.isIgnoringBatteryOptimizations(context.packageName)
+            if (isIgnoring) {
+                Text(
+                    stringResource(R.string.settings_battery_excluded),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            } else {
+                Button(
+                    onClick = {
+                        val intent = Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                            data = android.net.Uri.parse("package:${context.packageName}")
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // Fallback to general battery optimization settings
+                            val fallback = Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                            fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            try { context.startActivity(fallback) } catch (_: Exception) {}
+                        }
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    Text(stringResource(R.string.settings_battery_exclude))
+                }
+            }
 
             Spacer(Modifier.height(16.dp))
             Text(stringResource(R.string.settings_about), style = MaterialTheme.typography.titleMedium)
