@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.Webhook
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -89,6 +90,7 @@ fun AutomationsScreen() {
     val pendingUndo by vm.pendingUndo.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
     var editingAutomation by remember { mutableStateOf<AutomationEntity?>(null) }
+    var pendingDelete by remember { mutableStateOf<AutomationEntity?>(null) }
     val haptics = LocalHaptics.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -153,7 +155,7 @@ fun AutomationsScreen() {
                     AutomationCard(
                         automation = automation,
                         onToggle = { vm.toggleEnabled(automation.id, it) },
-                        onDelete = { vm.delete(automation.id) },
+                        onDelete = { pendingDelete = automation },
                         onEdit = { editingAutomation = automation },
                         onClone = { vm.clone(automation) },
                     )
@@ -175,6 +177,28 @@ fun AutomationsScreen() {
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
+        )
+    }
+
+    // Delete confirmation dialog
+    pendingDelete?.let { automation ->
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text(stringResource(R.string.automation_delete_title)) },
+            text = { Text(stringResource(R.string.automation_delete_message, automation.name)) },
+            confirmButton = {
+                Button(onClick = {
+                    haptics.heavy()
+                    vm.delete(automation.id)
+                    pendingDelete = null
+                }) { Text(stringResource(R.string.automation_delete_confirm)) }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = {
+                    haptics.tap()
+                    pendingDelete = null
+                }) { Text(stringResource(R.string.add_cancel)) }
+            },
         )
     }
 

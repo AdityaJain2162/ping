@@ -138,6 +138,9 @@
 
     <!-- Automation strings -->
     <string name="automation_add">Add automation</string>
+    <string name="automation_delete_title">Delete automation?</string>
+    <string name="automation_delete_message">Delete \"%1$s\"? You can undo this from the snackbar.</string>
+    <string name="automation_delete_confirm">Delete</string>
     <string name="automation_edit">Edit automation</string>
     <string name="automation_clone">Clone automation</string>
     <string name="automation_name">Automation name</string>
