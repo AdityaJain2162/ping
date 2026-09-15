@@ -11,6 +11,7 @@ import com.aditya.ping.util.NagScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -50,6 +51,8 @@ data class AddEditState(
     val isEdit: Boolean = false,
     val saving: Boolean = false,
     val saved: Boolean = false,
+    /** when non-null, a duplicate reminder with the same title+dueAt exists — user must confirm */
+    val duplicateWarning: Boolean = false,
 )
 
 class AddEditViewModel(
@@ -100,6 +103,7 @@ class AddEditViewModel(
     fun onAutomationChange(v: Long?) = _state.update { it.copy(automationId = v) }
     fun onRingtoneUriChange(v: String) = _state.update { it.copy(ringtoneUri = v) }
     fun onAntiSleepChange(v: Int) = _state.update { it.copy(antiSleepDismiss = v) }
+    fun dismissDuplicateWarning() = _state.update { it.copy(duplicateWarning = false) }
 
     fun save() = viewModelScope.launch {
         val s = _state.value
@@ -110,7 +114,19 @@ class AddEditViewModel(
         // Alarm requires a time trigger
         if (s.isAlarm && !hasTime) return@launch
 
-        _state.update { it.copy(saving = true) }
+        // Check for duplicates (same title + same dueAt, excluding self when editing)
+        if (!s.isEdit && s.dueAt != null) {
+            val all = repo.observeAll().first()
+            val existing = all.any {
+                it.title.equals(s.title.trim(), ignoreCase = true) && it.dueAt == s.dueAt
+            }
+            if (existing && !s.duplicateWarning) {
+                _state.update { it.copy(duplicateWarning = true) }
+                return@launch
+            }
+        }
+
+        _state.update { it.copy(saving = true, duplicateWarning = false) }
         val entity = ReminderEntity(
             id = if (s.isEdit) s.id else 0,
             title = s.title.trim(),

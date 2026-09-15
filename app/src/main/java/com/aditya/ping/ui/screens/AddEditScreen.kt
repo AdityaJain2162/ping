@@ -675,6 +675,27 @@ fun AddEditScreen(
             Spacer(Modifier.height(24.dp))
             BannerAd(modifier = Modifier.fillMaxWidth())
         }
+
+        // Duplicate reminder warning dialog
+        if (state.duplicateWarning) {
+            AlertDialog(
+                onDismissRequest = { /* keep warning — user must choose */ },
+                title = { Text(stringResource(R.string.duplicate_title)) },
+                text = { Text(stringResource(R.string.duplicate_message)) },
+                confirmButton = {
+                    Button(onClick = {
+                        haptics.heavy()
+                        vm.save() // duplicateWarning=true so it bypasses the check
+                    }) { Text(stringResource(R.string.duplicate_save_anyway)) }
+                },
+                dismissButton = {
+                    OutlinedButton(onClick = {
+                        haptics.tap()
+                        vm.dismissDuplicateWarning()
+                    }) { Text(stringResource(R.string.add_cancel)) }
+                },
+            )
+        }
     }
 }
 

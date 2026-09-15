@@ -27,6 +27,9 @@
     <string name="add_recurrence_interval">Every N days</string>
     <string name="add_recurrence_end_date">End date (optional)</string>
     <string name="add_recurrence_end_date_clear">Clear end date</string>
+    <string name="duplicate_title">Duplicate reminder?</string>
+    <string name="duplicate_message">A reminder with the same title and time already exists. Do you want to create it anyway?</string>
+    <string name="duplicate_save_anyway">Save anyway</string>
     <string name="add_nag_toggle">Keep nagging until done</string>
     <string name="add_nag_interval">Nag interval (minutes)</string>
 
