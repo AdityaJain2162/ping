@@ -26,6 +26,14 @@ enum class SortMode(val labelRes: Int) {
     BY_CREATED(R.string.sort_by_created),
 }
 
+enum class HomeFilter(val labelRes: Int) {
+    ALL(R.string.filter_all),
+    ACTIVE(R.string.filter_active),
+    LOCATION(R.string.filter_location),
+    TIME(R.string.filter_time),
+    OVERDUE(R.string.filter_overdue),
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
     private val repo: ReminderRepository,
@@ -37,6 +45,9 @@ class HomeViewModel(
 
     private val _sortMode = MutableStateFlow(SortMode.BY_DUE_DATE)
     val sortMode: StateFlow<SortMode> = _sortMode
+
+    private val _filter = MutableStateFlow(HomeFilter.ALL)
+    val filter: StateFlow<HomeFilter> = _filter
 
     private val _pendingUndo = MutableStateFlow<ReminderEntity?>(null)
     val pendingUndo: StateFlow<ReminderEntity?> = _pendingUndo
@@ -74,7 +85,7 @@ class HomeViewModel(
 
     /** Sectioned reminders for grouped display — completed reminders are NOT shown here */
     val sections: StateFlow<List<ReminderSection>> =
-        combine(reminders, _sortMode) { list, sortMode ->
+        combine(reminders, _sortMode, _filter) { list, sortMode, filter ->
             val now = System.currentTimeMillis()
             val cal = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 0)
@@ -92,28 +103,38 @@ class HomeViewModel(
                 SortMode.BY_CREATED -> items.sortedByDescending { it.createdAt }
             }
 
-            val overdueList = sortList(list.filter {
+            val filtered = when (filter) {
+                HomeFilter.ALL -> list
+                HomeFilter.ACTIVE -> list.filter { it.enabled && !it.completed }
+                HomeFilter.LOCATION -> list.filter { it.lat != 0.0 || it.lng != 0.0 }
+                HomeFilter.TIME -> list.filter { it.dueAt != null }
+                HomeFilter.OVERDUE -> list.filter {
+                    it.enabled && !it.completed && it.dueAt != null && it.dueAt < now
+                }
+            }
+
+            val overdueList = sortList(filtered.filter {
                 it.enabled && !it.completed && it.dueAt != null && it.dueAt < now
             })
 
-            val dueTodayList = sortList(list.filter {
+            val dueTodayList = sortList(filtered.filter {
                 it.enabled && !it.completed && it.dueAt != null && it.dueAt in now..endOfToday
             })
 
-            val locationList = sortList(list.filter {
+            val locationList = sortList(filtered.filter {
                 it.enabled && !it.completed && (it.lat != 0.0 || it.lng != 0.0) && (it.dueAt == null || it.dueAt > endOfToday)
             })
 
-            val upcomingList = sortList(list.filter {
+            val upcomingList = sortList(filtered.filter {
                 it.enabled && !it.completed && it.dueAt != null && it.dueAt > endOfToday && (it.lat == 0.0 && it.lng == 0.0)
             })
 
-            val laterList = sortList(list.filter {
+            val laterList = sortList(filtered.filter {
                 it.enabled && !it.completed && it.dueAt == null && (it.lat == 0.0 && it.lng == 0.0)
             })
 
             // Disabled (but not completed) reminders — shown in a separate section
-            val disabledList = sortList(list.filter { !it.enabled && !it.completed })
+            val disabledList = sortList(filtered.filter { !it.enabled && !it.completed })
 
             buildList {
                 if (overdueList.isNotEmpty()) add(ReminderSection("Overdue", overdueList, isOverdue = true))
@@ -148,6 +169,10 @@ class HomeViewModel(
 
     fun onSortModeChange(mode: SortMode) {
         _sortMode.value = mode
+    }
+
+    fun onFilterChange(filter: HomeFilter) {
+        _filter.value = filter
     }
 
     fun toggleEnabled(id: Long, enabled: Boolean) = viewModelScope.launch {
