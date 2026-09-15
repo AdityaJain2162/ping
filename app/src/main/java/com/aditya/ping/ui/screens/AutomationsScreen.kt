@@ -41,13 +41,19 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,9 +85,27 @@ fun AutomationsScreen() {
     val savedPlaces by savedPlaceRepo.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val vm: AutomationsViewModel = viewModel(factory = AutomationsViewModel.Factory(repo))
     val automations by vm.automations.collectAsStateWithLifecycle()
+    val pendingUndo by vm.pendingUndo.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
     var editingAutomation by remember { mutableStateOf<AutomationEntity?>(null) }
     val haptics = LocalHaptics.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    // Show undo snackbar when an automation is deleted
+    LaunchedEffect(pendingUndo) {
+        val pending = pendingUndo ?: return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = context.getString(R.string.deleted, pending.name),
+            actionLabel = context.getString(R.string.undo),
+            duration = SnackbarDuration.Short,
+        )
+        if (result == SnackbarResult.ActionPerformed) {
+            vm.undoDelete()
+        } else {
+            vm.clearUndo()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (automations.isEmpty()) {
@@ -136,6 +160,12 @@ fun AutomationsScreen() {
         ) {
             Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.automation_add))
         }
+
+        // Undo-delete snackbar
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
+        )
     }
 
     if (showAddDialog) {
