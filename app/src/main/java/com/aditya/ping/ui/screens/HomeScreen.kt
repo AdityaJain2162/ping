@@ -39,6 +39,11 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,7 +61,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -81,16 +88,37 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val appContext = context.applicationContext
+    val haptics = LocalHapticFeedback.current
     val repo = remember { ReminderRepository.from(context) }
     val vm: HomeViewModel = viewModel(factory = HomeViewModel.Factory(repo, appContext))
     val reminders by vm.reminders.collectAsStateWithLifecycle()
     val searchQuery by vm.searchQuery.collectAsStateWithLifecycle()
     val stats by vm.stats.collectAsStateWithLifecycle()
     val sections by vm.sections.collectAsStateWithLifecycle()
+    val pendingUndo by vm.pendingUndo.collectAsStateWithLifecycle()
     val isSearching = searchQuery.isNotBlank()
 
     // Celebration overlay state
     var showCelebration by remember { mutableStateOf(false) }
+
+    // Snackbar host for undo-delete
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    // Show undo snackbar when a reminder is deleted
+    LaunchedEffect(pendingUndo) {
+        val pending = pendingUndo ?: return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = context.getString(R.string.deleted, pending.title),
+            actionLabel = context.getString(R.string.undo),
+            duration = SnackbarDuration.Short,
+        )
+        if (result == SnackbarResult.ActionPerformed) {
+            vm.undoDelete()
+        } else {
+            vm.clearUndo()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -144,10 +172,14 @@ fun HomeScreen(
                             reminder = r,
                             onToggleEnabled = { enabled -> vm.toggleEnabled(r.id, enabled) },
                             onToggleCompleted = { completed ->
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                 vm.toggleCompleted(r.id, completed)
                                 if (completed) showCelebration = true
                             },
-                            onDelete = { vm.delete(r.id) },
+                            onDelete = {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                vm.delete(r.id)
+                            },
                             onClick = { onEdit(r.id) },
                         )
                     }
@@ -174,10 +206,14 @@ fun HomeScreen(
                                 reminder = r,
                                 onToggleEnabled = { enabled -> vm.toggleEnabled(r.id, enabled) },
                                 onToggleCompleted = { completed ->
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                     vm.toggleCompleted(r.id, completed)
                                     if (completed) showCelebration = true
                                 },
-                                onDelete = { vm.delete(r.id) },
+                                onDelete = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    vm.delete(r.id)
+                                },
                                 onClick = { onEdit(r.id) },
                                 modifier = Modifier.animateItem(),
                             )
@@ -192,6 +228,12 @@ fun HomeScreen(
         CelebrationOverlay(
             visible = showCelebration,
             onDismiss = { showCelebration = false },
+        )
+
+        // Undo-delete snackbar
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
 }

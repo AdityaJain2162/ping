@@ -3,6 +3,8 @@
     <string name="app_tagline">Reminders that find you</string>
 
     <!-- Home -->
+    <string name="undo">Undo</string>
+    <string name="deleted">Deleted \"%1$s\"</string>
     <string name="home_title">Your Reminders</string>
     <string name="home_empty">No reminders yet. Tap + to add one.</string>
     <string name="home_add">Add reminder</string>

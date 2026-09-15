@@ -27,6 +27,9 @@ class HomeViewModel(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
+    private val _pendingUndo = MutableStateFlow<ReminderEntity?>(null)
+    val pendingUndo: StateFlow<ReminderEntity?> = _pendingUndo
+
     val reminders: StateFlow<List<ReminderEntity>> =
         _searchQuery.flatMapLatest { query ->
             if (query.isBlank()) repo.observeAll()
@@ -152,9 +155,26 @@ class HomeViewModel(
     }
 
     fun delete(id: Long) = viewModelScope.launch {
+        val reminder = repo.getById(id)
+        if (reminder != null) {
+            _pendingUndo.value = reminder
+        }
         AlarmScheduler.cancel(appContext, id)
         NagScheduler.cancel(appContext, id)
         repo.deleteById(id)
+    }
+
+    fun undoDelete() = viewModelScope.launch {
+        val reminder = _pendingUndo.value ?: return@launch
+        repo.insert(reminder)
+        if (reminder.enabled && reminder.dueAt != null) {
+            AlarmScheduler.schedule(appContext, reminder)
+        }
+        _pendingUndo.value = null
+    }
+
+    fun clearUndo() {
+        _pendingUndo.value = null
     }
 
     private fun threeMonthsAgo(): Long {
