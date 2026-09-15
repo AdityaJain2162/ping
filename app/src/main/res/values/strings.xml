@@ -217,4 +217,8 @@
     <string name="widget_no_reminders">No reminders today</string>
     <string name="widget_no_reminders_desc">Enjoy your day — tap to add one</string>
     <string name="widget_reminders">reminder(s)</string>
+    <string name="add_quick_add">Quick add (natural language)</string>
+    <string name="add_quick_add_hint">e.g. buy milk tomorrow at 5 PM every week</string>
+    <string name="add_quick_add_parse">Parse</string>
+    <string name="add_quick_add_parsed">Parsed — review fields below</string>
 </resources>

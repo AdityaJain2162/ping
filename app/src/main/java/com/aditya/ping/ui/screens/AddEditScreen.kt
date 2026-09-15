@@ -123,6 +123,41 @@ fun AddEditScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            // Natural language quick-add (only when creating new)
+            if (!state.isEdit) {
+                var nlInput by remember { mutableStateOf("") }
+                var nlParsed by remember { mutableStateOf(false) }
+                OutlinedTextField(
+                    value = nlInput,
+                    onValueChange = { nlInput = it; nlParsed = false },
+                    label = { Text(stringResource(R.string.add_quick_add)) },
+                    placeholder = { Text(stringResource(R.string.add_quick_add_hint)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        TextButton(
+                            onClick = {
+                                val parsed = com.aditya.ping.util.NaturalLanguageParser.parse(nlInput)
+                                if (parsed.title.isNotBlank()) vm.onTitleChange(parsed.title)
+                                parsed.dueAt?.let { vm.onDueAtChange(it) }
+                                if (parsed.recurrenceType != 0) vm.onRecurrenceTypeChange(parsed.recurrenceType)
+                                if (parsed.isAlarm) vm.onAlarmToggle(true)
+                                parsed.triggerType?.let { vm.onTriggerChange(it) }
+                                if (parsed.addressLabel.isNotBlank()) vm.onLocation(0.0, 0.0, parsed.addressLabel)
+                                nlParsed = true
+                            },
+                        ) {
+                            Text(stringResource(R.string.add_quick_add_parse))
+                        }
+                    },
+                )
+                if (nlParsed) {
+                    Text(
+                        stringResource(R.string.add_quick_add_parsed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
             OutlinedTextField(
                 value = state.title,
                 onValueChange = vm::onTitleChange,
