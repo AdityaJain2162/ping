@@ -91,6 +91,10 @@
     <string name="time_in_days">in %1$d d</string>
     <string name="time_in_hours">in %1$d h</string>
     <string name="time_in_minutes">in %1$d min</string>
+    <string name="sort_by">Sort by</string>
+    <string name="sort_by_due_date">Due date</string>
+    <string name="sort_by_title">Title</string>
+    <string name="sort_by_created">Created</string>
     <string name="time_in_less_than_minute">in &lt;1 min</string>
 
     <!-- Quick actions -->

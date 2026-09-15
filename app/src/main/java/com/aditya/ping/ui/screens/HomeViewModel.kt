@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.aditya.ping.R
 import com.aditya.ping.data.ReminderEntity
 import com.aditya.ping.data.ReminderRepository
 import com.aditya.ping.util.AlarmScheduler
@@ -12,11 +13,18 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Calendar
+
+enum class SortMode(val labelRes: Int) {
+    BY_DUE_DATE(R.string.sort_by_due_date),
+    BY_TITLE(R.string.sort_by_title),
+    BY_CREATED(R.string.sort_by_created),
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
@@ -26,6 +34,9 @@ class HomeViewModel(
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
+
+    private val _sortMode = MutableStateFlow(SortMode.BY_DUE_DATE)
+    val sortMode: StateFlow<SortMode> = _sortMode
 
     private val _pendingUndo = MutableStateFlow<ReminderEntity?>(null)
     val pendingUndo: StateFlow<ReminderEntity?> = _pendingUndo
@@ -63,7 +74,7 @@ class HomeViewModel(
 
     /** Sectioned reminders for grouped display — completed reminders are NOT shown here */
     val sections: StateFlow<List<ReminderSection>> =
-        reminders.map { list ->
+        combine(reminders, _sortMode) { list, sortMode ->
             val now = System.currentTimeMillis()
             val cal = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 0)
@@ -75,28 +86,34 @@ class HomeViewModel(
             cal.add(Calendar.DAY_OF_YEAR, 1)
             val endOfToday = cal.timeInMillis
 
-            val overdueList = list.filter {
+            fun sortList(items: List<ReminderEntity>): List<ReminderEntity> = when (sortMode) {
+                SortMode.BY_DUE_DATE -> items.sortedBy { it.dueAt ?: Long.MAX_VALUE }
+                SortMode.BY_TITLE -> items.sortedBy { it.title.lowercase() }
+                SortMode.BY_CREATED -> items.sortedByDescending { it.createdAt }
+            }
+
+            val overdueList = sortList(list.filter {
                 it.enabled && !it.completed && it.dueAt != null && it.dueAt < now
-            }.sortedBy { it.dueAt }
+            })
 
-            val dueTodayList = list.filter {
+            val dueTodayList = sortList(list.filter {
                 it.enabled && !it.completed && it.dueAt != null && it.dueAt in now..endOfToday
-            }.sortedBy { it.dueAt }
+            })
 
-            val locationList = list.filter {
+            val locationList = sortList(list.filter {
                 it.enabled && !it.completed && (it.lat != 0.0 || it.lng != 0.0) && (it.dueAt == null || it.dueAt > endOfToday)
-            }
+            })
 
-            val upcomingList = list.filter {
+            val upcomingList = sortList(list.filter {
                 it.enabled && !it.completed && it.dueAt != null && it.dueAt > endOfToday && (it.lat == 0.0 && it.lng == 0.0)
-            }.sortedBy { it.dueAt }
+            })
 
-            val laterList = list.filter {
+            val laterList = sortList(list.filter {
                 it.enabled && !it.completed && it.dueAt == null && (it.lat == 0.0 && it.lng == 0.0)
-            }
+            })
 
             // Disabled (but not completed) reminders — shown in a separate section
-            val disabledList = list.filter { !it.enabled && !it.completed }
+            val disabledList = sortList(list.filter { !it.enabled && !it.completed })
 
             buildList {
                 if (overdueList.isNotEmpty()) add(ReminderSection("Overdue", overdueList, isOverdue = true))
@@ -127,6 +144,10 @@ class HomeViewModel(
 
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
+    }
+
+    fun onSortModeChange(mode: SortMode) {
+        _sortMode.value = mode
     }
 
     fun toggleEnabled(id: Long, enabled: Boolean) = viewModelScope.launch {

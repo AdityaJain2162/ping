@@ -32,11 +32,15 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Snackbar
@@ -144,12 +148,39 @@ fun HomeScreen(
                 }
             }
 
-            // Search bar
+            // Search bar with sort menu
+            var showSortMenu by remember { mutableStateOf(false) }
+            val sortMode by vm.sortMode.collectAsStateWithLifecycle()
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = vm::onSearchQueryChange,
                 placeholder = { Text(stringResource(R.string.home_search)) },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                trailingIcon = {
+                    Box {
+                        IconButton(onClick = {
+                            haptics.tap()
+                            showSortMenu = true
+                        }) {
+                            Icon(Icons.Filled.Sort, contentDescription = stringResource(R.string.sort_by))
+                        }
+                        DropdownMenu(
+                            expanded = showSortMenu,
+                            onDismissRequest = { showSortMenu = false },
+                        ) {
+                            SortMode.entries.forEach { mode ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(mode.labelRes)) },
+                                    onClick = {
+                                        haptics.tap()
+                                        vm.onSortModeChange(mode)
+                                        showSortMenu = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+                },
                 singleLine = true,
                 shape = MaterialTheme.shapes.large,
                 modifier = Modifier
