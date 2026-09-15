@@ -443,13 +443,13 @@ private fun AccentSwatch(
                 modifier = Modifier
                     .size(16.dp)
                     .clip(CircleShape)
-                    .background(androidx.compose.ui.graphics.Color.White),
+                    .background(MaterialTheme.colorScheme.onPrimary),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     "✓",
                     style = MaterialTheme.typography.labelSmall,
-                    color = preset.gradientEnd,
+                    color = MaterialTheme.colorScheme.primary,
                     fontSize = 10.sp,
                 )
             }
