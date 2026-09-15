@@ -175,6 +175,20 @@ class HomeViewModel(
         _filter.value = filter
     }
 
+    fun markAllDone(reminderIds: List<Long>) = viewModelScope.launch {
+        reminderIds.forEach { id ->
+            val r = repo.getById(id)
+            if (r != null && !r.completed) {
+                repo.update(r.copy(completed = true, completedAt = System.currentTimeMillis()))
+                AlarmScheduler.cancel(appContext, id)
+            }
+        }
+    }
+
+    fun deleteAll(reminderIds: List<Long>) = viewModelScope.launch {
+        reminderIds.forEach { id -> repo.deleteById(id) }
+    }
+
     fun toggleEnabled(id: Long, enabled: Boolean) = viewModelScope.launch {
         repo.setEnabled(id, enabled)
         val reminder = repo.getById(id) ?: return@launch

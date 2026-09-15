@@ -251,6 +251,10 @@ fun HomeScreen(
                         item(key = "header_${section.title}") {
                             SectionHeader(
                                 section = section,
+                                onMarkAllDone = {
+                                    haptics.heavy()
+                                    vm.markAllDone(section.reminders.map { it.id })
+                                },
                                 modifier = Modifier.animateItem(),
                             )
                         }
@@ -427,7 +431,11 @@ private fun VerticalDivider() {
 }
 
 @Composable
-private fun SectionHeader(section: ReminderSection, modifier: Modifier = Modifier) {
+private fun SectionHeader(
+    section: ReminderSection,
+    onMarkAllDone: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -444,6 +452,17 @@ private fun SectionHeader(section: ReminderSection, modifier: Modifier = Modifie
         Spacer(Modifier.width(8.dp))
         HorizontalDivider(modifier = Modifier.weight(1f))
         Spacer(Modifier.width(8.dp))
+        if (onMarkAllDone != null && section.reminders.any { !it.completed }) {
+            IconButton(onClick = onMarkAllDone) {
+                Icon(
+                    Icons.Filled.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Spacer(Modifier.width(4.dp))
+        }
         Box(
             modifier = Modifier
                 .clip(MaterialTheme.shapes.small)
