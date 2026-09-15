@@ -19,7 +19,6 @@ class ImportExportManager(private val context: Context) {
     suspend fun export(): String = withContext(Dispatchers.IO) {
         val db = PingDatabase.get(context)
         val reminders = db.reminderDao().observeAll().first()
-        val lists = db.reminderListDao().observeAll().first()
         val places = db.savedPlaceDao().observeAll().first()
 
         val backup = JSONObject()
@@ -55,16 +54,6 @@ class ImportExportManager(private val context: Context) {
         }
         backup.put("reminders", remindersArray)
 
-        val listsArray = JSONArray()
-        lists.forEach { l ->
-            listsArray.put(JSONObject().apply {
-                put("name", l.name)
-                put("color", l.color)
-                put("createdAt", l.createdAt)
-            })
-        }
-        backup.put("lists", listsArray)
-
         val placesArray = JSONArray()
         places.forEach { p ->
             placesArray.put(JSONObject().apply {
@@ -89,21 +78,6 @@ class ImportExportManager(private val context: Context) {
         }
         val db = PingDatabase.get(context)
 
-        // Import lists first, build name→newId mapping for reminder references
-        val listIdMap = mutableMapOf<Long, Long>()
-        val listsArray = backup.optJSONArray("lists") ?: JSONArray()
-        for (i in 0 until listsArray.length()) {
-            val obj = listsArray.getJSONObject(i)
-            val newList = com.aditya.ping.data.ReminderListEntity(
-                name = obj.getString("name"),
-                color = obj.optInt("color", 0),
-                createdAt = obj.optLong("createdAt", System.currentTimeMillis()),
-            )
-            val newId = db.reminderListDao().insert(newList)
-            // Map old listId (index+1) to new ID
-            listIdMap[(i + 1).toLong()] = newId
-        }
-
         // Import saved places
         val placesArray = backup.optJSONArray("savedPlaces") ?: JSONArray()
         for (i in 0 until placesArray.length()) {
@@ -126,7 +100,6 @@ class ImportExportManager(private val context: Context) {
         for (i in 0 until remindersArray.length()) {
             val obj = remindersArray.getJSONObject(i)
             val oldListId = if (obj.isNull("listId")) null else obj.optLong("listId", 0L).takeIf { it > 0 }
-            val newListId = oldListId?.let { listIdMap[it] }
 
             val reminder = ReminderEntity(
                 title = obj.getString("title"),
@@ -148,7 +121,7 @@ class ImportExportManager(private val context: Context) {
                 recurrenceEndDate = if (obj.isNull("recurrenceEndDate")) null else obj.optLong("recurrenceEndDate", 0L).takeIf { it > 0 },
                 nagMode = obj.optBoolean("nagMode", false),
                 nagIntervalMinutes = obj.optInt("nagIntervalMinutes", 15),
-                listId = newListId,
+                listId = null, // Lists feature removed
                 automationId = if (obj.isNull("automationId")) null else obj.optLong("automationId", 0L).takeIf { it > 0 },
                 ringtoneUri = obj.optString("ringtoneUri", ""),
                 lastFiredAt = obj.optLong("lastFiredAt", 0L),

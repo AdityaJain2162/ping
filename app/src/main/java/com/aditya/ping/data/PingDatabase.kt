@@ -7,14 +7,13 @@ import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [ReminderEntity::class, SavedPlaceEntity::class, ReminderListEntity::class, AutomationEntity::class],
-    version = 15,
+    entities = [ReminderEntity::class, SavedPlaceEntity::class, AutomationEntity::class],
+    version = 16,
     exportSchema = false,
 )
 abstract class PingDatabase : RoomDatabase() {
     abstract fun reminderDao(): ReminderDao
     abstract fun savedPlaceDao(): SavedPlaceDao
-    abstract fun reminderListDao(): ReminderListDao
     abstract fun automationDao(): AutomationDao
 
     companion object {

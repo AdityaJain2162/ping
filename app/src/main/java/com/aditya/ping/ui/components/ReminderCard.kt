@@ -51,7 +51,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aditya.ping.R
 import com.aditya.ping.data.ReminderEntity
-import com.aditya.ping.util.HapticUtil
+import com.aditya.ping.ui.theme.LocalHaptics
 import com.aditya.ping.util.UiFormats
 import com.aditya.ping.ui.theme.TimestampStyle
 
@@ -66,6 +66,7 @@ fun ReminderCard(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val haptics = LocalHaptics.current
     val isOverdue = reminder.enabled && !reminder.completed && reminder.dueAt != null && reminder.dueAt < System.currentTimeMillis()
     val isDone = reminder.completed
 
@@ -87,13 +88,13 @@ fun ReminderCard(
             when (value) {
                 SwipeToDismissBoxValue.StartToEnd -> {
                     // Swipe right = toggle done
-                    HapticUtil.complete(context)
+                    haptics.confirm()
                     onToggleCompleted(!reminder.completed)
                     false // Don't dismiss — just toggle
                 }
                 SwipeToDismissBoxValue.EndToStart -> {
                     // Swipe left = delete
-                    HapticUtil.delete(context)
+                    haptics.heavy()
                     onDelete()
                     true // Dismiss
                 }
@@ -143,7 +144,7 @@ fun ReminderCard(
     ) {
         Card(
             onClick = {
-                HapticUtil.toggle(context)
+                haptics.tap()
                 onClick()
             },
             modifier = Modifier.fillMaxWidth(),
@@ -294,7 +295,7 @@ fun ReminderCard(
                             else Color.Transparent,
                         )
                         .clickable {
-                            HapticUtil.complete(context)
+                            haptics.confirm()
                             onToggleCompleted(!reminder.completed)
                         },
                     contentAlignment = Alignment.Center,
@@ -314,7 +315,7 @@ fun ReminderCard(
                 // Clone button
                 IconButton(
                     onClick = {
-                        HapticUtil.toggle(context)
+                        haptics.tap()
                         onClone()
                     },
                     modifier = Modifier.size(40.dp),
@@ -329,7 +330,7 @@ fun ReminderCard(
 
                 // Switch for enabled/disabled (alarm active or not)
                 Switch(checked = reminder.enabled, onCheckedChange = {
-                    HapticUtil.toggle(context)
+                    haptics.tap()
                     onToggleEnabled(it)
                 })
             }
