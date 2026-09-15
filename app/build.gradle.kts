@@ -34,11 +34,6 @@ android {
     flavorDimensions += "distribution"
 
     productFlavors {
-        create("community") {
-            dimension = "distribution"
-            applicationIdSuffix = ".community"
-            versionNameSuffix = "-community"
-        }
         create("playstore") {
             dimension = "distribution"
             // No suffix — this is the canonical Play Store app ID
@@ -98,8 +93,8 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.material)
 
-    // AdMob — only in the playstore flavor
-    "playstoreImplementation"(libs.play.services.ads)
+    // AdMob banner ads (Play Store build)
+    implementation(libs.play.services.ads)
 
     debugImplementation(libs.androidx.ui.tooling)
 

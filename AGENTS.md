@@ -24,20 +24,18 @@ by Aditya Jain. The app name is appended (e.g. `com.aditya.ping`,
 
 ### Product Flavors
 
-Ping ships in two flavors via the `distribution` flavor dimension:
+Ping ships in a single flavor via the `distribution` flavor dimension:
 
 | Flavor | App ID | Ads | Purpose |
 |--------|--------|-----|---------|
-| `community` | `com.aditya.ping.community` | No | Ad-free, sideloadable, open build |
 | `playstore` | `com.aditya.ping` | Yes (AdMob) | Play Store release with banner ads |
 
-- Ad code (`BannerAd`, `AdConfig`, `AdInitializer`) lives in **flavor source
-  sets**, not `main`. The community flavor provides no-op stubs; the playstore
-  flavor provides real AdMob implementations.
-- `play-services-ads` dependency is `playstoreImplementation` only — the
-  community APK contains zero ad SDK code.
+- Ad code (`BannerAd`, `AdConfig`, `AdInitializer`) lives in **`main` source
+  set** — there is only one build flavor now.
+- `play-services-ads` dependency is a regular `implementation` — every build
+  includes the AdMob SDK.
 - AdMob meta-data + `INTERNET`/`ACCESS_NETWORK_STATE` permissions are in
-  `src/playstore/AndroidManifest.xml` only.
+  `src/main/AndroidManifest.xml`.
 
 ### Why this app exists
 Google removed location-based reminders from Keep in H2 2025. Existing
@@ -54,7 +52,7 @@ beyond location into time reminders, alarms, nag mode, and smart scheduling.
 - Location-based reminders (arrive/leave geofence)
 - Material 3 + AMOLED theme (system/light/dark/AMOLED)
 - Room persistence, offline-first
-- Community (ad-free) + Play Store (ads) flavors
+- Play Store flavor with AdMob banner ads
 - GitHub Actions CI/CD
 
 ### Phase 1 — Core Reminder & Alarm Power
@@ -328,9 +326,8 @@ Git identity is pre-configured in `.git/config`. Do not change it.
 ### Build-test-commit workflow
 
 > **ALWAYS** build → test → commit for each feature. Do not batch multiple
-> features into a single commit. Run `./gradlew assembleCommunityDebug` and
-> `./gradlew assemblePlaystoreDebug` before every commit. If the build fails,
-> fix it before committing.
+> features into a single commit. Run `./gradlew assemblePlaystoreDebug` before
+> every commit. If the build fails, fix it before committing.
 
 ### Code style
 
@@ -362,17 +359,10 @@ Git identity is pre-configured in `.git/config`. Do not change it.
 ## 7. Command Cheat Sheet
 
 ```bash
-# Build community debug APK (ad-free)
-./gradlew assembleCommunityDebug
-
 # Build playstore debug APK (with ads)
 ./gradlew assemblePlaystoreDebug
 
-# Build both flavors
-./gradlew assembleDebug
-
-# Install on connected device/emulator (specify flavor)
-./gradlew installCommunityDebug
+# Install on connected device/emulator
 ./gradlew installPlaystoreDebug
 
 # Run unit tests
@@ -381,11 +371,11 @@ Git identity is pre-configured in `.git/config`. Do not change it.
 # Run instrumented tests (needs emulator/device)
 ./gradlew connectedAndroidTests
 
-# Build release AAB (Play Store — playstore flavor only)
+# Build release AAB (Play Store)
 ./gradlew bundlePlaystoreRelease
 
 # Lint check
-./gradlew lintCommunityDebug
+./gradlew lintPlaystoreDebug
 
 # Clean build
 ./gradlew clean

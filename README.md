@@ -17,8 +17,7 @@ alarm hub.
 - **Dynamic Color** on Android 12+ (auto-disabled for AMOLED to keep true black).
 - **Privacy-first** — all data is local (Room DB). No account, no cloud sync,
   no tracking.
-- **Ad-supported** (Play Store flavor) — a single banner ad on the home screen
-  (never mid-task). Community flavor is ad-free.
+- **Ad-supported** — a single banner ad on the home screen (never mid-task).
 - **Offline-first** — reminders fire without an internet connection.
 
 ## Roadmap
@@ -45,25 +44,16 @@ See [AGENTS.md](AGENTS.md) section 2 for the full feature roadmap. Highlights:
 | Persistence | Room (KSP) |
 | Location | Google Play Services FusedLocationProvider |
 | Alarms | AlarmManager + AlarmReceiver (coming) |
-| Ads | Google Mobile Ads (AdMob) — playstore flavor only |
+| Ads | Google Mobile Ads (AdMob) — banner ads on Home |
 | Theme persistence | DataStore Preferences |
 | Background | Foreground service + boot receiver |
-
-## Product flavors
-
-| Flavor | App ID | Ads | Purpose |
-|--------|--------|-----|---------|
-| `community` | `com.aditya.ping.community` | No | Ad-free, sideloadable |
-| `playstore` | `com.aditya.ping` | Yes (AdMob) | Play Store release |
 
 ## Build
 
 ```bash
 # Requires Android SDK Platform 34 + Build-Tools 34.0.0 + Google Play services
-./gradlew assembleCommunityDebug    # ad-free APK
-./gradlew assemblePlaystoreDebug     # ad-supported APK
-./gradlew assembleDebug              # both flavors
-./gradlew installCommunityDebug      # install ad-free on device
+./gradlew assemblePlaystoreDebug     # debug APK with ads
+./gradlew installPlaystoreDebug       # install on device
 ```
 
 ## Project structure
@@ -74,15 +64,12 @@ See [AGENTS.md](AGENTS.md) for the full architecture playbook.
 app/src/main/java/com/aditya/ping/
 ├── ui/theme/        Material 3 + AMOLED color tokens, PingTheme
 ├── ui/screens/      Home, AddEdit, Settings + ViewModels
-├── ui/components/   ReminderCard, BannerAd (flavor-specific)
+├── ui/components/   ReminderCard, BannerAd (AdMob)
 ├── ui/navigation/   PingNavHost routes
 ├── data/            Room entity, DAO, DB, repository, ThemeRepository
 ├── domain/          ThemeMode enum
 ├── service/         GeofenceService (foreground), BootReceiver
-└── util/            LocationUtil, PermissionUtil, NotificationChannels
-
-app/src/community/java/com/aditya/ping/   No-op ad stubs
-app/src/playstore/java/com/aditya/ping/  Real AdMob (AdConfig, BannerAd, AdInitializer)
+└── util/            LocationUtil, PermissionUtil, NotificationChannels, AdConfig
 ```
 
 ## AdMob — test vs production
