@@ -9,6 +9,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -32,9 +33,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.scale
@@ -46,27 +50,38 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.aditya.ping.R
+import com.aditya.ping.ui.components.BannerAd
 import com.aditya.ping.ui.screens.AddEditScreen
 import com.aditya.ping.ui.screens.AutomationsScreen
 import com.aditya.ping.ui.screens.CalendarScreen
 import com.aditya.ping.ui.screens.HistoryScreen
 import com.aditya.ping.ui.screens.HomeScreen
-import com.aditya.ping.ui.screens.ListsScreen
 import com.aditya.ping.ui.screens.SavedPlacesScreen
+import com.aditya.ping.ui.screens.AboutScreen
 import com.aditya.ping.ui.screens.SettingsScreen
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PingNavHost() {
+fun PingNavHost(startRoute: String = Routes.HOME, sharedText: String? = null) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     val isOnTab = currentRoute == Routes.HOME
     val scope = rememberCoroutineScope()
+    val haptics = com.aditya.ping.ui.theme.LocalHaptics.current
 
     val tabRoutes = listOf(Routes.HOME, Routes.SAVED_PLACES, Routes.CALENDAR, Routes.AUTOMATIONS)
     val pagerState = rememberPagerState(pageCount = { tabRoutes.size })
+
+    // Haptic feedback when page changes via swipe (not just tab button taps)
+    var lastPage by remember { mutableStateOf(0) }
+    LaunchedEffect(pagerState.currentPage) {
+        if (pagerState.currentPage != lastPage) {
+            haptics.tap()
+            lastPage = pagerState.currentPage
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -82,11 +97,6 @@ fun PingNavHost() {
                         }
                     },
                     actions = {
-                        if (pagerState.currentPage == 0) {
-                            IconButton(onClick = { nav.navigate(Routes.LISTS) }) {
-                                Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.lists_title))
-                            }
-                        }
                         IconButton(onClick = { nav.navigate(Routes.SETTINGS) }) {
                             Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings_title))
                         }
@@ -107,7 +117,10 @@ fun PingNavHost() {
                         )
                         NavigationBarItem(
                             selected = selected,
-                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                            onClick = {
+                                haptics.tap()
+                                scope.launch { pagerState.animateScrollToPage(index) }
+                            },
                             modifier = Modifier.testTag("tab_${tabRoutes[index]}"),
                             icon = {
                                 Icon(
@@ -142,38 +155,42 @@ fun PingNavHost() {
     ) { inner ->
         NavHost(
             navController = nav,
-            startDestination = Routes.HOME,
+            startDestination = startRoute,
             modifier = Modifier.fillMaxSize().padding(inner),
             enterTransition = { fadeIn() },
             exitTransition = { fadeOut() },
         ) {
             composable(Routes.HOME) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
-                ) { page ->
-                    when (tabRoutes[page]) {
-                        Routes.HOME -> HomeScreen(
-                            onAdd = { nav.navigate(Routes.ADD) },
-                            onEdit = { id -> nav.navigate(Routes.edit(id)) },
-                            onSettings = { nav.navigate(Routes.SETTINGS) },
-                            onSavedPlaces = { scope.launch { pagerState.animateScrollToPage(1) } },
-                            onLists = { nav.navigate(Routes.LISTS) },
-                            onCalendar = { scope.launch { pagerState.animateScrollToPage(2) } },
-                            onHistory = { nav.navigate(Routes.HISTORY) },
-                        )
-                        Routes.SAVED_PLACES -> SavedPlacesScreen(onBack = { scope.launch { pagerState.animateScrollToPage(0) } })
-                        Routes.CALENDAR -> CalendarScreen(
-                            onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
-                            onEdit = { id -> nav.navigate(Routes.edit(id)) },
-                        )
-                        Routes.AUTOMATIONS -> AutomationsScreen()
+                Column(modifier = Modifier.fillMaxSize()) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.weight(1f),
+                    ) { page ->
+                        when (tabRoutes[page]) {
+                            Routes.HOME -> HomeScreen(
+                                onAdd = { nav.navigate(Routes.ADD) },
+                                onEdit = { id -> nav.navigate(Routes.edit(id)) },
+                                onSettings = { nav.navigate(Routes.SETTINGS) },
+                                onSavedPlaces = { scope.launch { pagerState.animateScrollToPage(1) } },
+                                onCalendar = { scope.launch { pagerState.animateScrollToPage(2) } },
+                                onHistory = { nav.navigate(Routes.HISTORY) },
+                            )
+                            Routes.SAVED_PLACES -> SavedPlacesScreen(onBack = { scope.launch { pagerState.animateScrollToPage(0) } })
+                            Routes.CALENDAR -> CalendarScreen(
+                                onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
+                                onEdit = { id -> nav.navigate(Routes.edit(id)) },
+                            )
+                            Routes.AUTOMATIONS -> AutomationsScreen()
+                        }
                     }
+                    // Pinned banner ad — always visible across all 4 main tabs
+                    BannerAd()
                 }
             }
             composable(Routes.ADD) {
                 AddEditScreen(
                     reminderId = 0L,
+                    sharedText = sharedText,
                     onSaved = { nav.popBackStack() },
                     onCancel = { nav.popBackStack() },
                 )
@@ -190,10 +207,13 @@ fun PingNavHost() {
                 )
             }
             composable(Routes.SETTINGS) {
-                SettingsScreen(onBack = { nav.popBackStack() })
+                SettingsScreen(
+                    onBack = { nav.popBackStack() },
+                    onAbout = { nav.navigate(Routes.ABOUT) },
+                )
             }
-            composable(Routes.LISTS) {
-                ListsScreen(onBack = { nav.popBackStack() })
+            composable(Routes.ABOUT) {
+                AboutScreen(onBack = { nav.popBackStack() })
             }
             composable(Routes.HISTORY) {
                 HistoryScreen(onBack = { nav.popBackStack() })

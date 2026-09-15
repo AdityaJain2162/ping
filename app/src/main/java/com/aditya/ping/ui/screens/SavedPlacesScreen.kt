@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import com.aditya.ping.ui.theme.LocalHaptics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -49,6 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aditya.ping.R
 import com.aditya.ping.data.SavedPlaceRepository
+import com.aditya.ping.ui.components.BannerAd
 import com.aditya.ping.util.GeoCoderUtil
 import com.aditya.ping.util.LocationUtil
 import com.aditya.ping.util.PermissionUtil
@@ -60,6 +62,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun SavedPlacesScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val haptics = LocalHaptics.current
     val appContext = context.applicationContext
     val repo = remember { SavedPlaceRepository.from(context) }
     val vm: SavedPlacesViewModel = viewModel(factory = SavedPlacesViewModel.Factory(repo, appContext))
@@ -98,7 +101,10 @@ fun SavedPlacesScreen(onBack: () -> Unit) {
             TopAppBar(
                 title = { Text(stringResource(R.string.saved_places_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        haptics.tap()
+                        onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
                     }
                 },
@@ -132,6 +138,7 @@ fun SavedPlacesScreen(onBack: () -> Unit) {
             locationSearchResults.forEach { result ->
                 OutlinedButton(
                     onClick = {
+                        haptics.tap()
                         pendingLocation = Triple(result.lat, result.lng, result.label)
                         locationSearchQuery = ""
                         locationSearchResults = emptyList()
@@ -145,6 +152,7 @@ fun SavedPlacesScreen(onBack: () -> Unit) {
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedButton(onClick = {
+                    haptics.tap()
                     if (!PermissionUtil.hasFineLocation(context)) {
                         locationLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
                     } else {
@@ -178,6 +186,7 @@ fun SavedPlacesScreen(onBack: () -> Unit) {
             )
             OutlinedButton(
                 onClick = {
+                    haptics.heavy()
                     val loc = pendingLocation ?: return@OutlinedButton
                     val radius = newRadius.toIntOrNull() ?: 150
                     vm.add(newName, loc.first, loc.second, loc.third, radius)
@@ -233,7 +242,10 @@ fun SavedPlacesScreen(onBack: () -> Unit) {
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
-                                IconButton(onClick = { vm.delete(place.id) }) {
+                                IconButton(onClick = {
+                                    haptics.heavy()
+                                    vm.delete(place.id)
+                                }) {
                                     Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.add_cancel))
                                 }
                             }

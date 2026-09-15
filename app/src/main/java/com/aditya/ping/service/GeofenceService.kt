@@ -123,6 +123,7 @@ class GeofenceService : Service() {
 
         val openIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra(com.aditya.ping.MainActivity.EXTRA_OPEN_REMINDER_ID, r.id)
         }
         val pi = PendingIntent.getActivity(
             this, r.id.toInt(), openIntent,
@@ -138,19 +139,23 @@ class GeofenceService : Service() {
             .setAutoCancel(true)
             .setContentIntent(pi)
 
-        // Quick action button (if set)
-        if (r.quickActionType != 0 && r.quickActionData.isNotBlank()) {
-            val quickIntent = com.aditya.ping.util.QuickActionExecutor.createIntent(r)
-            if (quickIntent != null) {
-                quickIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                val quickPi = PendingIntent.getActivity(
-                    this, r.id.toInt() + 30000, quickIntent,
+        // Automation action button (if linked)
+        if (r.automationId != null) {
+            val autoRepo = com.aditya.ping.data.AutomationRepository.from(this)
+            val automation = kotlinx.coroutines.runBlocking { autoRepo.getById(r.automationId) }
+            if (automation != null && automation.enabled) {
+                val autoIntent = Intent(this, AutomationActionReceiver::class.java).apply {
+                    putExtra(AutomationActionReceiver.EXTRA_AUTOMATION_ID, automation.id)
+                    putExtra(AutomationActionReceiver.EXTRA_REMINDER_ID, r.id)
+                }
+                val autoPi = PendingIntent.getBroadcast(
+                    this, r.id.toInt() + 30000, autoIntent,
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                 )
                 builder.addAction(
                     0,
-                    com.aditya.ping.util.QuickActionExecutor.actionLabel(r.quickActionType),
-                    quickPi,
+                    com.aditya.ping.util.AutomationExecutor.actionLabel(automation.actionType),
+                    autoPi,
                 )
             }
         }

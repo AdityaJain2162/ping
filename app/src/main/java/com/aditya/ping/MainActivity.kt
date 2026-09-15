@@ -1,6 +1,7 @@
 package com.aditya.ping
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -11,12 +12,27 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.core.content.ContextCompat
+import com.aditya.ping.data.OnboardingRepository
+import com.aditya.ping.data.ThemePrefs
 import com.aditya.ping.data.ThemeRepository
 import com.aditya.ping.ui.navigation.PingNavHost
+import com.aditya.ping.ui.navigation.Routes
+import com.aditya.ping.ui.screens.OnboardingScreen
 import com.aditya.ping.ui.theme.PingTheme
+import com.aditya.ping.ui.theme.rememberHapticController
+import com.aditya.ping.widget.DueTodayWidgetProvider
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
+
+    companion object {
+        const val EXTRA_OPEN_REMINDER_ID = "open_reminder_id"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -31,13 +47,67 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        setContent {
-            val themeRepo = remember { ThemeRepository(this) }
-            val themeMode by themeRepo.themeMode.collectAsState(initial = com.aditya.ping.domain.ThemeMode.SYSTEM)
+        val quickAdd = intent?.getBooleanExtra(DueTodayWidgetProvider.EXTRA_QUICK_ADD, false) ?: false
+        val sharedText = if (intent?.action == Intent.ACTION_SEND) {
+            intent.getStringExtra(Intent.EXTRA_TEXT)
+        } else null
+        val openReminderId = intent?.getLongExtra(EXTRA_OPEN_REMINDER_ID, -1L) ?: -1L
+        val startRoute = when {
+            quickAdd || sharedText != null -> Routes.ADD
+            openReminderId > 0 -> Routes.edit(openReminderId)
+            else -> Routes.HOME
+        }
 
-            PingTheme(themeMode = themeMode) {
-                PingNavHost()
+        // Read theme prefs synchronously to avoid the dark→light flash on launch.
+        // DataStore loads asynchronously, so the initial render would use the default
+        // (SYSTEM) theme, then flash to the saved theme when DataStore resolves.
+        // runBlocking on first() blocks briefly during onCreate — acceptable for
+        // theme loading and eliminates the jittery theme transition.
+        val themeRepo = ThemeRepository(this)
+        val initialPrefs: ThemePrefs = runBlocking { themeRepo.themePrefs.first() }
+        val onboardingRepo = OnboardingRepository(this)
+        val initialOnboardingDone = runBlocking { onboardingRepo.isCompleted.first() }
+
+        setContent {
+            val prefs by themeRepo.themePrefs.collectAsState(initial = initialPrefs)
+            val hapticController = rememberHapticController(
+                enabled = prefs.hapticFeedback,
+                intensityName = prefs.hapticIntensity,
+            )
+            val onboardingDone by onboardingRepo.isCompleted.collectAsState(initial = initialOnboardingDone)
+            val scope = rememberCoroutineScope()
+
+            PingTheme(
+                themeMode = prefs.mode,
+                accentName = prefs.accentName,
+                dynamicColor = prefs.dynamicColor,
+                animationsEnabled = prefs.animationsEnabled,
+                hapticController = hapticController,
+            ) {
+                if (!onboardingDone && !quickAdd && sharedText == null && openReminderId <= 0) {
+                    OnboardingScreen(
+                        onComplete = {
+                            scope.launch { onboardingRepo.setCompleted() }
+                        },
+                    )
+                } else {
+                    PingNavHost(
+                        startRoute = startRoute,
+                        sharedText = sharedText,
+                    )
+                }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        // If a notification was tapped while the activity was alive, recreate
+        // so the new startRoute (edit screen) takes effect.
+        val openReminderId = intent.getLongExtra(EXTRA_OPEN_REMINDER_ID, -1L)
+        if (openReminderId > 0) {
+            recreate()
         }
     }
 }

@@ -14,7 +14,6 @@ import com.aditya.ping.util.AlarmScheduler
 import com.aditya.ping.util.NagScheduler
 import com.aditya.ping.util.NotificationChannels
 import com.aditya.ping.util.QuietHoursManager
-import com.aditya.ping.util.QuickActionExecutor
 import com.aditya.ping.util.RecurrenceCalculator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -149,9 +148,10 @@ class AlarmReceiver : BroadcastReceiver() {
         val snoozePi = PendingIntent.getBroadcast(context, notifId + 10000, snoozeIntent, flag)
         val deferPi = PendingIntent.getBroadcast(context, notifId + 20000, deferIntent, flag)
 
-        // Tapping the notification opens the app
+        // Tapping the notification opens the app to the specific reminder
         val openIntent = Intent(context, com.aditya.ping.MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            putExtra(com.aditya.ping.MainActivity.EXTRA_OPEN_REMINDER_ID, reminder.id)
         }
         val openPi = PendingIntent.getActivity(
             context, notifId + 50000, openIntent,
@@ -170,19 +170,23 @@ class AlarmReceiver : BroadcastReceiver() {
             .addAction(0, context.getString(R.string.notif_action_snooze), snoozePi)
             .addAction(0, context.getString(R.string.notif_action_defer), deferPi)
 
-        // Quick action button (if set)
-        if (reminder.quickActionType != 0 && reminder.quickActionData.isNotBlank()) {
-            val quickIntent = QuickActionExecutor.createIntent(reminder)
-            if (quickIntent != null) {
-                quickIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                val quickPi = PendingIntent.getActivity(
-                    context, notifId + 30000, quickIntent,
+        // Automation action button (if linked)
+        if (reminder.automationId != null) {
+            val autoRepo = com.aditya.ping.data.AutomationRepository.from(context)
+            val automation = kotlinx.coroutines.runBlocking { autoRepo.getById(reminder.automationId) }
+            if (automation != null && automation.enabled) {
+                val autoIntent = Intent(context, AutomationActionReceiver::class.java).apply {
+                    putExtra(AutomationActionReceiver.EXTRA_AUTOMATION_ID, automation.id)
+                    putExtra(AutomationActionReceiver.EXTRA_REMINDER_ID, reminder.id)
+                }
+                val autoPi = PendingIntent.getBroadcast(
+                    context, notifId + 30000, autoIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
                 builder.addAction(
                     0,
-                    QuickActionExecutor.actionLabel(reminder.quickActionType),
-                    quickPi,
+                    com.aditya.ping.util.AutomationExecutor.actionLabel(automation.actionType),
+                    autoPi,
                 )
             }
         }

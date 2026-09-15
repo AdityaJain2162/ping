@@ -35,14 +35,12 @@ data class ReminderEntity(
     val listId: Long? = null,
     /** combined trigger mode: 0=OR (fire on either time or location), 1=AND (both required) */
     val triggerMode: Int = 0,
-    /** quick action type: 0=none, 1=call, 2=whatsapp, 3=open app, 4=navigate, 5=url */
-    val quickActionType: Int = 0,
-    /** quick action data: phone number, package name, URL, or label */
-    val quickActionData: String = "",
-    /** quick action extra data: e.g., WhatsApp/SMS message body */
-    val quickActionMessage: String = "",
+    /** ID of the automation to run when this reminder fires, null = no automation */
+    val automationId: Long? = null,
     /** custom ringtone URI for alarms, empty = default */
     val ringtoneUri: String = "",
+    /** anti-sleep dismiss mode: 0=none, 1=math challenge, 2=long-press 3s */
+    val antiSleepDismiss: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
     val enabled: Boolean = true,
     /** whether the user has marked this reminder as done (separate from enabled) */

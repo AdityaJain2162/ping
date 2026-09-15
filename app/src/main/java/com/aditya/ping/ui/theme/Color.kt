@@ -2,78 +2,9 @@ package com.aditya.ping.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Ping color palette — coral primary, teal secondary, amber tertiary
-// Forces a consistent brand identity across light/dark/AMOLED themes
-// (Dynamic Color is disabled by design — see Theme.kt)
-
-// Light tokens
-val LightPrimary = Color(0xFFD8483E)
-val LightOnPrimary = Color(0xFFFFFFFF)
-val LightPrimaryContainer = Color(0xFFFFDAD4)
-val LightOnPrimaryContainer = Color(0xFF410002)
-val LightSecondary = Color(0xFF006A6E)
-val LightOnSecondary = Color(0xFFFFFFFF)
-val LightSecondaryContainer = Color(0xFF6FF6FA)
-val LightOnSecondaryContainer = Color(0xFF002022)
-val LightTertiary = Color(0xFFB45200)
-val LightOnTertiary = Color(0xFFFFFFFF)
-val LightTertiaryContainer = Color(0xFFFFDDB3)
-val LightOnTertiaryContainer = Color(0xFF3B1700)
-val LightBackground = Color(0xFFFAF8F5)
-val LightOnBackground = Color(0xFF1A1C1E)
-val LightSurface = Color(0xFFFAF8F5)
-val LightOnSurface = Color(0xFF1A1C1E)
-val LightSurfaceVariant = Color(0xFFEDE0DC)
-val LightOnSurfaceVariant = Color(0xFF45474A)
-val LightOutline = Color(0xFF76767A)
-val LightOutlineVariant = Color(0xFFD0C5C1)
-val LightError = Color(0xFFBA1A1A)
-val LightOnError = Color(0xFFFFFFFF)
-val LightErrorContainer = Color(0xFFFFDAD6)
-val LightOnErrorContainer = Color(0xFF410002)
-val LightSurfaceContainer = Color(0xFFF4F1ED)
-val LightSurfaceContainerHigh = Color(0xFFEEEAE5)
-val LightSurfaceContainerHighest = Color(0xFFE8E4DF)
-val LightInverseSurface = Color(0xFF2F3030)
-val LightInverseOnSurface = Color(0xFFF1F0EE)
-val LightInversePrimary = Color(0xFFFFB4A8)
-
-// Dark tokens
-val DarkPrimary = Color(0xFFFFB4A8)
-val DarkOnPrimary = Color(0xFF660005)
-val DarkPrimaryContainer = Color(0xFF932220)
-val DarkOnPrimaryContainer = Color(0xFFFFDAD4)
-val DarkSecondary = Color(0xFF4CD9DE)
-val DarkOnSecondary = Color(0xFF00373A)
-val DarkSecondaryContainer = Color(0xFF004F53)
-val DarkOnSecondaryContainer = Color(0xFF6FF6FA)
-val DarkTertiary = Color(0xFFFFB87D)
-val DarkOnTertiary = Color(0xFF5B3300)
-val DarkTertiaryContainer = Color(0xFF824D00)
-val DarkOnTertiaryContainer = Color(0xFFFFDDB3)
-val DarkBackground = Color(0xFF141313)
-val DarkOnBackground = Color(0xFFE6E2E0)
-val DarkSurface = Color(0xFF141313)
-val DarkOnSurface = Color(0xFFE6E2E0)
-val DarkSurfaceVariant = Color(0xFF45474A)
-val DarkOnSurfaceVariant = Color(0xFFCDC4C0)
-val DarkOutline = Color(0xFF968F8B)
-val DarkOutlineVariant = Color(0xFF45474A)
-val DarkError = Color(0xFFFFB4AB)
-val DarkOnError = Color(0xFF690005)
-val DarkErrorContainer = Color(0xFF93000A)
-val DarkOnErrorContainer = Color(0xFFFFDAD6)
-val DarkSurfaceContainer = Color(0xFF211F1F)
-val DarkSurfaceContainerHigh = Color(0xFF2C2A2A)
-val DarkSurfaceContainerHighest = Color(0xFF373534)
-val DarkInverseSurface = Color(0xFFE6E2E0)
-val DarkInverseOnSurface = Color(0xFF2F3030)
-val DarkInversePrimary = Color(0xFFD8483E)
-
-// AMOLED overrides — true black for OLED battery saving
-val AmoledBackground = Color(0xFF000000)
-val AmoledSurface = Color(0xFF000000)
-val AmoledSurfaceVariant = Color(0xFF0A0A0A)
-val AmoledSurfaceContainer = Color(0xFF111111)
-val AmoledSurfaceContainerHigh = Color(0xFF1A1A1A)
-val AmoledSurfaceContainerHighest = Color(0xFF222222)
+// Ping color palette — accent presets live in DesignSystem.kt
+// Surface/background/error tokens are now generated from the accent seed
+// via HCT (Material You) scheme generation in Theme.kt.
+//
+// This file is kept only for any legacy references; the canonical color
+// source is the HCT scheme + AccentPreset definitions in DesignSystem.kt.

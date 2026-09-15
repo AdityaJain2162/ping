@@ -13,6 +13,8 @@ class ReminderRepository(private val dao: ReminderDao) {
     suspend fun getEnabled(): List<ReminderEntity> = dao.getEnabled()
     suspend fun getEnabledWithTimeTrigger(): List<ReminderEntity> = dao.getEnabledWithTimeTrigger()
 
+    fun observeLocationOnly(): Flow<List<ReminderEntity>> = dao.observeLocationOnly()
+
     suspend fun insert(reminder: ReminderEntity): Long = dao.insert(reminder)
     suspend fun update(reminder: ReminderEntity) = dao.update(reminder)
     suspend fun deleteById(id: Long) = dao.deleteById(id)

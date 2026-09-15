@@ -3,6 +3,8 @@
     <string name="app_tagline">Reminders that find you</string>
 
     <!-- Home -->
+    <string name="undo">Undo</string>
+    <string name="deleted">Deleted \"%1$s\"</string>
     <string name="home_title">Your Reminders</string>
     <string name="home_empty">No reminders yet. Tap + to add one.</string>
     <string name="home_add">Add reminder</string>
@@ -14,12 +16,20 @@
     <string name="add_note_label">Note</string>
     <string name="add_location_label">Location</string>
     <string name="add_time_label">Time (optional)</string>
-    <string name="add_time_pick">Pick date and time</string>
+    <string name="add_time_today">Today</string>
+    <string name="add_time_tomorrow">Tomorrow</string>
+    <string name="add_time_pick_date">Pick date</string>
+    <string name="add_time_pick_time">Pick time</string>
     <string name="add_time_clear">Clear</string>
     <string name="add_alarm_toggle">Ring as full-screen alarm</string>
     <string name="add_snooze_label">Snooze interval (minutes)</string>
     <string name="add_recurrence_label">Repeat</string>
     <string name="add_recurrence_interval">Every N days</string>
+    <string name="add_recurrence_end_date">End date (optional)</string>
+    <string name="add_recurrence_end_date_clear">Clear end date</string>
+    <string name="duplicate_title">Duplicate reminder?</string>
+    <string name="duplicate_message">A reminder with the same title and time already exists. Do you want to create it anyway?</string>
+    <string name="duplicate_save_anyway">Save anyway</string>
     <string name="add_nag_toggle">Keep nagging until done</string>
     <string name="add_nag_interval">Nag interval (minutes)</string>
 
@@ -55,6 +65,7 @@
     <!-- Calendar -->
     <string name="calendar_title">Calendar</string>
     <string name="calendar_no_reminders">No reminders on this day.</string>
+    <string name="calendar_location_reminders">Location reminders</string>
 
     <!-- Data -->
     <string name="data_title">Backup and Restore</string>
@@ -82,6 +93,19 @@
     <string name="home_stat_overdue">Overdue</string>
     <string name="home_stat_completed">Done</string>
     <string name="card_overdue">Overdue</string>
+    <string name="time_in_days">in %1$d d</string>
+    <string name="time_in_hours">in %1$d h</string>
+    <string name="time_in_minutes">in %1$d min</string>
+    <string name="sort_by">Sort by</string>
+    <string name="sort_by_due_date">Due date</string>
+    <string name="sort_by_title">Title</string>
+    <string name="sort_by_created">Created</string>
+    <string name="filter_all">All</string>
+    <string name="filter_active">Active</string>
+    <string name="filter_location">Location</string>
+    <string name="filter_time">Time</string>
+    <string name="filter_overdue">Overdue</string>
+    <string name="time_in_less_than_minute">in &lt;1 min</string>
 
     <!-- Quick actions -->
     <string name="add_quick_action">When triggered, also:</string>
@@ -110,11 +134,35 @@
     <string name="tab_calendar">Calendar</string>
     <string name="tab_automations">Automations</string>
     <string name="automations_title">Automations</string>
-    <string name="automations_subtitle">Trigger reminders and actions with NFC tags, WiFi, Bluetooth, and webhooks. Coming soon.</string>
+    <string name="automations_subtitle">Create reusable actions triggered by location, Wi-Fi, Bluetooth, NFC, or webhooks. Link them to reminders for one-tap execution.</string>
 
     <!-- Automation strings -->
     <string name="automation_add">Add automation</string>
+    <string name="automation_delete_title">Delete automation?</string>
+    <string name="automation_delete_message">Delete \"%1$s\"? You can undo this from the snackbar.</string>
+    <string name="automation_delete_confirm">Delete</string>
+    <string name="automation_edit">Edit automation</string>
+    <string name="automation_clone">Clone automation</string>
     <string name="automation_name">Automation name</string>
+    <string name="automation_action_data_required">Action data is required for this action type</string>
+    <string name="automation_test">Test</string>
+    <string name="onboarding_get_started">Get started</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_welcome_title">Welcome to Ping</string>
+    <string name="onboarding_welcome_desc">Privacy-first reminders and automations. No account, no cloud, no tracking. Everything stays on your device.</string>
+    <string name="onboarding_reminders_title">Time &amp; Location Reminders</string>
+    <string name="onboarding_reminders_desc">Set time-based alarms, location-based geofence triggers (arrive/leave), or both. Ping will remind you at the right time and place.</string>
+    <string name="onboarding_automations_title">Reusable Automations</string>
+    <string name="onboarding_automations_desc">Create automations once — call, SMS, open apps, navigate — and link them to any reminder. Triggered automatically when the reminder fires.</string>
+    <string name="onboarding_permissions_title">Permissions</string>
+    <string name="onboarding_permissions_desc">Ping needs location access for geofence triggers, notifications for alerts, and exact alarms for time-based reminders. You\'ll be asked when needed.</string>
+    <string name="automation_perm_call_title">Call permission needed</string>
+    <string name="automation_perm_call_msg">Grant Call Phone permission so this automation can place calls automatically when triggered. Without it, the dialer will open and you\'ll need to tap Call manually.</string>
+    <string name="automation_perm_sms_title">SMS permission needed</string>
+    <string name="automation_perm_sms_msg">Grant Send SMS permission so this automation can send text messages automatically when triggered. Without it, the SMS app will open and you\'ll need to tap Send manually.</string>
+    <string name="automation_perm_grant">Grant permission</string>
+    <string name="automation_perm_denied">Permission denied — automation will open the app instead of running automatically</string>
     <string name="automation_trigger">When…</string>
     <string name="automation_action">Do…</string>
     <string name="trigger_location_arrive">Arrive at location</string>
@@ -160,9 +208,55 @@
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_amoled">AMOLED black</string>
+    <string name="settings_accent_color">Accent Color</string>
+    <string name="settings_accent_color_title">Accent Color</string>
+    <string name="settings_dynamic_color">Dynamic Color</string>
+    <string name="settings_dynamic_color_desc">Android 12+ — blends palette with your wallpaper</string>
+    <string name="settings_animations">Animations</string>
+    <string name="settings_animations_desc">Enables transitions, spring motion, and color shifts</string>
+    <string name="settings_haptic_feedback">Haptic Feedback</string>
+    <string name="settings_haptic_feedback_desc">Vibrate on taps and actions</string>
+    <string name="settings_haptic_intensity">Haptic Intensity</string>
+    <string name="settings_haptic_intensity_desc">How strong the vibration feels</string>
     <string name="settings_amoled_toggle">AMOLED black</string>
     <string name="settings_about">About</string>
     <string name="settings_about_body">Ping — privacy-first location reminders. No account, no tracking, no cloud. Ads support development.</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="settings_rate_app">Rate on Play Store</string>
+    <string name="settings_share_app">Share app</string>
+    <string name="settings_share_app_text">Check out Ping — privacy-first reminders and automations for Android. No account, no tracking. https://play.google.com/store/apps/details?id=com.aditya.ping</string>
+    <string name="settings_feedback">Send feedback</string>
+    <string name="settings_feedback_email">jaditya700@gmail.com</string>
+    <string name="settings_feedback_subject">Ping feedback</string>
+    <!-- About screen -->
+    <string name="about_title">About</string>
+    <string name="about_app_name">Ping</string>
+    <string name="about_tagline">Privacy-first reminders and automations.</string>
+    <string name="about_description">Privacy-first location reminders and automations for Android. No account, no tracking, no cloud. Ads support development.</string>
+    <string name="about_developer">Developer</string>
+    <string name="about_developer_name">Aditya Jain</string>
+    <string name="about_developer_role">Android Developer</string>
+    <string name="about_github">GitHub</string>
+    <string name="about_github_url">https://github.com/AdityaJain2162</string>
+    <string name="about_github_subtitle">github.com/AdityaJain2162</string>
+    <string name="about_linkedin">LinkedIn</string>
+    <string name="about_linkedin_url">https://www.linkedin.com/in/adityajain2162</string>
+    <string name="about_linkedin_subtitle">linkedin.com/in/adityajain2162</string>
+    <string name="about_repo">Source Code</string>
+    <string name="about_repo_url">https://github.com/AdityaJain2162/ping</string>
+    <string name="about_repo_subtitle">github.com/AdityaJain2162/ping</string>
+    <string name="about_version">Version</string>
+    <string name="about_tech_stack">Built With</string>
+    <string name="about_tech_stack_value">Kotlin • Jetpack Compose • Material 3 • Room • AlarmManager • Geofencing</string>
+    <string name="about_privacy">Privacy</string>
+    <string name="about_privacy_value">No analytics, no telemetry, no tracking. Your data never leaves your device.</string>
+    <string name="about_license">License</string>
+    <string name="about_license_value">MIT License</string>
+    <string name="back">Back</string>
+    <string name="settings_battery">Battery Optimization</string>
+    <string name="settings_battery_desc">Exclude Ping from battery optimization so alarms and reminders fire reliably even in Doze mode.</string>
+    <string name="settings_battery_excluded">✓ Ping is excluded from battery optimization</string>
+    <string name="settings_battery_exclude">Exclude from battery optimization</string>
 
     <!-- Notifications -->
     <string name="notif_channel_geofence">Location reminders</string>
@@ -190,11 +284,40 @@
     <string name="history_empty">No completed reminders yet</string>
     <string name="home_view_history">View History (%1$d)</string>
     <string name="card_mark_done">Mark done</string>
+    <string name="reminder_clone">Clone reminder</string>
     <string name="alarm_default_title">Alarm</string>
     <string name="alarm_dismiss">Dismiss</string>
     <string name="alarm_snooze">Snooze</string>
     <string name="alarm_snooze_for">Snooze for…</string>
     <string name="alarm_cancel">Cancel</string>
+    <string name="alarm_anti_sleep_math">Solve to dismiss</string>
+    <string name="alarm_anti_sleep_long_press">Hold to dismiss</string>
+    <string name="alarm_anti_sleep_hold">Hold the button…</string>
+    <string name="alarm_anti_sleep_wrong">Wrong answer, try again</string>
+    <string name="add_alarm_anti_sleep">Anti-sleep dismiss</string>
+    <string name="add_alarm_anti_sleep_none">None</string>
+    <string name="add_alarm_anti_sleep_math">Math challenge</string>
+    <string name="add_alarm_anti_sleep_long_press">Long-press 3s</string>
     <string name="calendar_prev_month">Previous month</string>
     <string name="calendar_next_month">Next month</string>
+    <string name="widget_due_today">Due Today</string>
+    <string name="widget_due_today_desc">Shows today\'s reminders and alarms at a glance</string>
+    <string name="widget_quick_add">Quick add</string>
+    <string name="add_voice_input">Speak reminder</string>
+    <string name="add_voice_not_supported">Voice input not supported on this device</string>
+    <string name="add_section_details">Details</string>
+    <string name="add_section_time">Time</string>
+    <string name="add_section_location">Location</string>
+    <string name="add_section_actions">Automation</string>
+    <string name="add_automation_none">None</string>
+    <string name="add_automation_pick">Select automation</string>
+    <string name="add_automation_empty">No automations yet — create one in the Automations tab</string>
+    <string name="add_section_advanced">Advanced</string>
+    <string name="widget_no_reminders">No reminders today</string>
+    <string name="widget_no_reminders_desc">Enjoy your day — tap to add one</string>
+    <string name="widget_reminders">reminder(s)</string>
+    <string name="add_quick_add">Quick add (natural language)</string>
+    <string name="add_quick_add_hint">e.g. buy milk tomorrow at 5 PM every week</string>
+    <string name="add_quick_add_parse">Parse</string>
+    <string name="add_quick_add_parsed">Parsed — review fields below</string>
 </resources>

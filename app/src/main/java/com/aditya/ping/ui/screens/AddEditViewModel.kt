@@ -11,6 +11,7 @@ import com.aditya.ping.util.NagScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -41,17 +42,17 @@ data class AddEditState(
     val nagIntervalMinutes: Int = 15,
     /** combined trigger mode: 0=OR (fire on either time or location), 1=AND (both required) */
     val triggerMode: Int = 0,
-    /** quick action type: 0=none, 1=call, 2=whatsapp, 3=open app, 4=navigate, 5=url */
-    val quickActionType: Int = 0,
-    /** quick action data: phone number, package name, URL */
-    val quickActionData: String = "",
-    /** quick action message: WhatsApp/SMS message body */
-    val quickActionMessage: String = "",
+    /** ID of the automation to run when this reminder fires, null = no automation */
+    val automationId: Long? = null,
     /** custom ringtone URI for alarms, empty = default */
     val ringtoneUri: String = "",
+    /** anti-sleep dismiss mode: 0=none, 1=math challenge, 2=long-press 3s */
+    val antiSleepDismiss: Int = 0,
     val isEdit: Boolean = false,
     val saving: Boolean = false,
     val saved: Boolean = false,
+    /** when non-null, a duplicate reminder with the same title+dueAt exists — user must confirm */
+    val duplicateWarning: Boolean = false,
 )
 
 class AddEditViewModel(
@@ -75,10 +76,9 @@ class AddEditViewModel(
                     recurrenceEndDate = r.recurrenceEndDate,
                     nagMode = r.nagMode, nagIntervalMinutes = r.nagIntervalMinutes,
                     triggerMode = r.triggerMode,
-                    quickActionType = r.quickActionType,
-                    quickActionData = r.quickActionData,
-                    quickActionMessage = r.quickActionMessage,
+                    automationId = r.automationId,
                     ringtoneUri = r.ringtoneUri,
+                    antiSleepDismiss = r.antiSleepDismiss,
                     isEdit = true,
                 )
             }
@@ -100,10 +100,10 @@ class AddEditViewModel(
     fun onNagModeToggle(v: Boolean) = _state.update { it.copy(nagMode = v) }
     fun onNagIntervalChange(v: Int) = _state.update { it.copy(nagIntervalMinutes = v.coerceIn(1, 120)) }
     fun onTriggerModeChange(v: Int) = _state.update { it.copy(triggerMode = v) }
-    fun onQuickActionTypeChange(v: Int) = _state.update { it.copy(quickActionType = v) }
-    fun onQuickActionDataChange(v: String) = _state.update { it.copy(quickActionData = v) }
-    fun onQuickActionMessageChange(v: String) = _state.update { it.copy(quickActionMessage = v) }
+    fun onAutomationChange(v: Long?) = _state.update { it.copy(automationId = v) }
     fun onRingtoneUriChange(v: String) = _state.update { it.copy(ringtoneUri = v) }
+    fun onAntiSleepChange(v: Int) = _state.update { it.copy(antiSleepDismiss = v) }
+    fun dismissDuplicateWarning() = _state.update { it.copy(duplicateWarning = false) }
 
     fun save() = viewModelScope.launch {
         val s = _state.value
@@ -114,7 +114,19 @@ class AddEditViewModel(
         // Alarm requires a time trigger
         if (s.isAlarm && !hasTime) return@launch
 
-        _state.update { it.copy(saving = true) }
+        // Check for duplicates (same title + same dueAt, excluding self when editing)
+        if (!s.isEdit && s.dueAt != null) {
+            val all = repo.observeAll().first()
+            val existing = all.any {
+                it.title.equals(s.title.trim(), ignoreCase = true) && it.dueAt == s.dueAt
+            }
+            if (existing && !s.duplicateWarning) {
+                _state.update { it.copy(duplicateWarning = true) }
+                return@launch
+            }
+        }
+
+        _state.update { it.copy(saving = true, duplicateWarning = false) }
         val entity = ReminderEntity(
             id = if (s.isEdit) s.id else 0,
             title = s.title.trim(),
@@ -132,10 +144,9 @@ class AddEditViewModel(
             nagMode = s.nagMode,
             nagIntervalMinutes = s.nagIntervalMinutes,
             triggerMode = if (hasLocation && hasTime) s.triggerMode else 0,
-            quickActionType = s.quickActionType,
-            quickActionData = s.quickActionData.trim(),
-            quickActionMessage = s.quickActionMessage.trim(),
+            automationId = s.automationId,
             ringtoneUri = s.ringtoneUri,
+            antiSleepDismiss = s.antiSleepDismiss,
         )
         val id = if (s.isEdit) {
             repo.update(entity)

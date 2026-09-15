@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   release:
-    name: Build Release APKs & AAB
+    name: Build Release APK & AAB
     runs-on: ubuntu-latest
     timeout-minutes: 35
 
@@ -44,19 +44,8 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build community release APK
-        run: ./gradlew assembleCommunityRelease --no-daemon
-
       - name: Build playstore release APK + AAB
         run: ./gradlew assemblePlaystoreRelease bundlePlaystoreRelease --no-daemon
-
-      - name: Upload community release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: ping-community-release-apk
-          path: app/build/outputs/apk/community/release/*.apk
-          retention-days: 30
-          if-no-files-found: error
 
       - name: Upload playstore release APK
         uses: actions/upload-artifact@v4
@@ -79,6 +68,5 @@ jobs:
         with:
           generate_release_notes: true
           files: |
-            app/build/outputs/apk/community/release/*.apk
             app/build/outputs/apk/playstore/release/*.apk
             app/build/outputs/bundle/playstore/release/*.aab

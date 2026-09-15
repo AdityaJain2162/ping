@@ -1,7 +1,13 @@
 package com.aditya.ping.ui.screens
 
 import android.app.TimePickerDialog
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,15 +16,30 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Feedback
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Card
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,25 +50,38 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aditya.ping.R
 import com.aditya.ping.data.ThemeRepository
 import com.aditya.ping.domain.ThemeMode
+import com.aditya.ping.ui.components.BannerAd
+import com.aditya.ping.ui.theme.AccentPresets
+import com.aditya.ping.ui.theme.LocalHaptics
 import com.aditya.ping.util.QuietHoursManager
 import com.aditya.ping.util.ImportExportManager
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onAbout: () -> Unit = {},
+) {
     val context = LocalContext.current
+    val haptics = LocalHaptics.current
     val themeRepo = remember { ThemeRepository(context) }
     val vm: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory(themeRepo))
-    val current by vm.themeMode.collectAsStateWithLifecycle()
+    val prefs by vm.themePrefs.collectAsStateWithLifecycle()
+    val current = prefs.mode
     val scope = rememberCoroutineScope()
 
     val quietHours = remember { QuietHoursManager(context) }
@@ -61,31 +95,160 @@ fun SettingsScreen(onBack: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(inner)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(inner),
         ) {
-            Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleMedium)
-            Column(modifier = Modifier.selectableGroup()) {
-                ThemeOption(
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleMedium)
+                Column(modifier = Modifier.selectableGroup()) {
+                    ThemeOption(
                     label = stringResource(R.string.settings_theme_system),
                     selected = current == ThemeMode.SYSTEM,
-                    onSelect = { vm.setTheme(ThemeMode.SYSTEM) },
+                    onSelect = {
+                        haptics.tap()
+                        vm.setTheme(ThemeMode.SYSTEM)
+                    },
                 )
                 ThemeOption(
                     label = stringResource(R.string.settings_theme_light),
                     selected = current == ThemeMode.LIGHT,
-                    onSelect = { vm.setTheme(ThemeMode.LIGHT) },
+                    onSelect = {
+                        haptics.tap()
+                        vm.setTheme(ThemeMode.LIGHT)
+                    },
                 )
                 ThemeOption(
                     label = stringResource(R.string.settings_theme_dark),
                     selected = current == ThemeMode.DARK,
-                    onSelect = { vm.setTheme(ThemeMode.DARK) },
+                    onSelect = {
+                        haptics.tap()
+                        vm.setTheme(ThemeMode.DARK)
+                    },
                 )
                 ThemeOption(
                     label = stringResource(R.string.settings_theme_amoled),
                     selected = current == ThemeMode.AMOLED,
-                    onSelect = { vm.setTheme(ThemeMode.AMOLED) },
+                    onSelect = {
+                        haptics.tap()
+                        vm.setTheme(ThemeMode.AMOLED)
+                    },
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+            Text(stringResource(R.string.settings_accent_color), style = MaterialTheme.typography.titleMedium)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                AccentPresets.forEach { preset ->
+                    AccentSwatch(
+                        preset = preset,
+                        isSelected = prefs.accentName == preset.name,
+                        onClick = {
+                            haptics.tap()
+                            vm.setAccentName(preset.name)
+                        },
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_dynamic_color), style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        stringResource(R.string.settings_dynamic_color_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = prefs.dynamicColor,
+                    enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
+                    onCheckedChange = {
+                        haptics.confirm()
+                        vm.setDynamicColor(it)
+                    },
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_animations), style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        stringResource(R.string.settings_animations_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = prefs.animationsEnabled,
+                    onCheckedChange = {
+                        haptics.confirm()
+                        vm.setAnimationsEnabled(it)
+                    },
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_haptic_feedback), style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        stringResource(R.string.settings_haptic_feedback_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = prefs.hapticFeedback,
+                    onCheckedChange = {
+                        haptics.confirm()
+                        vm.setHapticFeedback(it)
+                    },
+                )
+            }
+            if (prefs.hapticFeedback) {
+                Text(stringResource(R.string.settings_haptic_intensity), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    listOf("LOW" to "Low", "MEDIUM" to "Medium", "HIGH" to "High").forEach { (value, label) ->
+                        FilterChip(
+                            selected = prefs.hapticIntensity == value,
+                            onClick = {
+                                haptics.confirm()
+                                vm.setHapticIntensity(value)
+                            },
+                            label = { Text(label) },
+                        )
+                    }
+                }
+                Text(
+                    stringResource(R.string.settings_haptic_intensity_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -99,7 +262,10 @@ fun SettingsScreen(onBack: () -> Unit) {
                 Text(stringResource(R.string.quiet_hours_enable), style = MaterialTheme.typography.bodyLarge)
                 Switch(
                     checked = quietEnabled,
-                    onCheckedChange = { scope.launch { quietHours.setEnabled(it) } },
+                    onCheckedChange = {
+                        haptics.tap()
+                        scope.launch { quietHours.setEnabled(it) }
+                    },
                 )
             }
             if (quietEnabled) {
@@ -110,6 +276,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 ) {
                     Text(stringResource(R.string.quiet_hours_start), style = MaterialTheme.typography.bodyMedium)
                     TextButton(onClick = {
+                        haptics.tap()
                         TimePickerDialog(context, { _, h, m ->
                             scope.launch { quietHours.setStartMinutes(h * 60 + m) }
                         }, quietStart / 60, quietStart % 60, true).show()
@@ -124,6 +291,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 ) {
                     Text(stringResource(R.string.quiet_hours_end), style = MaterialTheme.typography.bodyMedium)
                     TextButton(onClick = {
+                        haptics.tap()
                         TimePickerDialog(context, { _, h, m ->
                             scope.launch { quietHours.setEndMinutes(h * 60 + m) }
                         }, quietEnd / 60, quietEnd % 60, true).show()
@@ -144,6 +312,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 androidx.compose.material3.OutlinedButton(
                     onClick = {
+                        haptics.heavy()
                         scope.launch {
                             val manager = ImportExportManager(context)
                             val json = manager.export()
@@ -163,6 +332,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 }
                 androidx.compose.material3.OutlinedButton(
                     onClick = {
+                        haptics.heavy()
                         scope.launch {
                             val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                             val clip = clipboard.primaryClip
@@ -185,12 +355,153 @@ fun SettingsScreen(onBack: () -> Unit) {
             )
 
             Spacer(Modifier.height(16.dp))
-            Text(stringResource(R.string.settings_about), style = MaterialTheme.typography.titleMedium)
+
+            // Battery optimization
+            Text(stringResource(R.string.settings_battery), style = MaterialTheme.typography.titleMedium)
             Text(
-                stringResource(R.string.settings_about_body),
-                style = MaterialTheme.typography.bodyMedium,
+                stringResource(R.string.settings_battery_desc),
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            val powerManager = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+            val isIgnoring = powerManager.isIgnoringBatteryOptimizations(context.packageName)
+            if (isIgnoring) {
+                Text(
+                    stringResource(R.string.settings_battery_excluded),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            } else {
+                Button(
+                    onClick = {
+                        haptics.heavy()
+                        val intent = Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                            data = android.net.Uri.parse("package:${context.packageName}")
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // Fallback to general battery optimization settings
+                            val fallback = Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                            fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            try { context.startActivity(fallback) } catch (_: Exception) {}
+                        }
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    Text(stringResource(R.string.settings_battery_exclude))
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+            Text(stringResource(R.string.settings_about), style = MaterialTheme.typography.titleMedium)
+            // Navigate to full About screen
+            Card(
+                onClick = {
+                    haptics.tap()
+                    onAbout()
+                },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Filled.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                    Spacer(Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.settings_about),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Text(
+                            text = stringResource(R.string.settings_about_body),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            // Quick actions: Rate, Share, Feedback
+            Row(
+                modifier = Modifier.padding(top = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(onClick = {
+                    haptics.tap()
+                    val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=com.aditya.ping")).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    try {
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        val webIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/apps/details?id=com.aditya.ping")).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(webIntent)
+                    }
+                }) {
+                    Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.settings_rate_app))
+                }
+                OutlinedButton(onClick = {
+                    haptics.tap()
+                    val send = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, context.getString(R.string.settings_share_app_text))
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(Intent.createChooser(send, context.getString(R.string.settings_share_app)).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    })
+                }) {
+                    Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.settings_share_app))
+                }
+            }
+            Row(
+                modifier = Modifier.padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(onClick = {
+                    haptics.tap()
+                    val intent = Intent(Intent.ACTION_SENDTO).apply {
+                        data = android.net.Uri.parse("mailto:${context.getString(R.string.settings_feedback_email)}")
+                        putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.settings_feedback_subject))
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    try {
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        context.startActivity(Intent.createChooser(intent, context.getString(R.string.settings_feedback)).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        })
+                    }
+                }) {
+                    Icon(Icons.Filled.Feedback, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.settings_feedback))
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+            }
+            // Pinned banner ad — always visible
+            BannerAd()
         }
     }
 }
@@ -212,5 +523,44 @@ private fun ThemeOption(label: String, selected: Boolean, onSelect: () -> Unit) 
         RadioButton(selected = selected, onClick = onSelect)
         Spacer(Modifier.size(8.dp))
         Text(label, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+@Composable
+private fun AccentSwatch(
+    preset: com.aditya.ping.ui.theme.AccentPreset,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    val haptics = com.aditya.ping.ui.theme.LocalHaptics.current
+    val size = if (isSelected) 40.dp else 32.dp
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outlineVariant
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(Brush.linearGradient(listOf(preset.gradientStart, preset.gradientEnd)))
+            .clickable {
+                haptics.tap()
+                onClick()
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .size(16.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.onPrimary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    "✓",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 10.sp,
+                )
+            }
+        }
     }
 }

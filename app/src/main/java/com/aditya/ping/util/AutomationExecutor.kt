@@ -4,12 +4,15 @@ import android.app.NotificationManager
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.telephony.SmsManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.aditya.ping.R
 import com.aditya.ping.data.AutomationEntity
 
@@ -57,7 +60,11 @@ object AutomationExecutor {
 
     private fun dialNumber(context: Context, number: String): Boolean {
         return try {
-            context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$number")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            val canCallDirectly = ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.CALL_PHONE,
+            ) == PackageManager.PERMISSION_GRANTED
+            val action = if (canCallDirectly) Intent.ACTION_CALL else Intent.ACTION_DIAL
+            context.startActivity(Intent(action, Uri.parse("tel:$number")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             true
         } catch (e: Exception) { false }
     }
@@ -75,12 +82,30 @@ object AutomationExecutor {
     }
 
     private fun sendSms(context: Context, number: String, message: String): Boolean {
-        return try {
-            val uri = if (message.isNotBlank()) "smsto:$number?body=${Uri.encode(message)}"
-            else "smsto:$number"
-            context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse(uri)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            true
-        } catch (e: Exception) { false }
+        val canSendDirectly = ContextCompat.checkSelfPermission(
+            context, android.Manifest.permission.SEND_SMS,
+        ) == PackageManager.PERMISSION_GRANTED
+        return if (canSendDirectly && message.isNotBlank()) {
+            // Send automatically — no user interaction needed
+            try {
+                val smsManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    context.getSystemService(SmsManager::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    SmsManager.getDefault()
+                }
+                smsManager.sendTextMessage(number, null, message, null, null)
+                true
+            } catch (e: Exception) { false }
+        } else {
+            // Fall back to SMS composer (user taps send)
+            try {
+                val uri = if (message.isNotBlank()) "smsto:$number?body=${Uri.encode(message)}"
+                else "smsto:$number"
+                context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse(uri)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                true
+            } catch (e: Exception) { false }
+        }
     }
 
     private fun openApp(context: Context, packageName: String): Boolean {
@@ -184,5 +209,21 @@ object AutomationExecutor {
             }
         }.start()
         return true
+    }
+
+    fun actionLabel(type: Int): String = when (type) {
+        0 -> "Notify"
+        1 -> "Call"
+        2 -> "WhatsApp"
+        3 -> "SMS"
+        4 -> "Open app"
+        5 -> "Navigate"
+        6 -> "Open URL"
+        7 -> "Toggle Wi-Fi"
+        8 -> "Toggle Bluetooth"
+        9 -> "Silent mode"
+        10 -> "Set volume"
+        11 -> "Webhook"
+        else -> "Run"
     }
 }

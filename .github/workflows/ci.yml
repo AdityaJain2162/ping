@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build Both Flavors
+    name: Build Play Store APK
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -49,24 +49,12 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build community debug APK (ad-free)
-        run: ./gradlew assembleCommunityDebug --no-daemon
-
       - name: Build playstore debug APK (with ads)
         run: ./gradlew assemblePlaystoreDebug --no-daemon
 
       - name: Run Android Lint
-        run: ./gradlew lintCommunityDebug --no-daemon
+        run: ./gradlew lintPlaystoreDebug --no-daemon
         continue-on-error: true
-
-      - name: Upload community APK
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ping-community-debug-apk
-          path: app/build/outputs/apk/community/debug/*.apk
-          retention-days: 7
-          if-no-files-found: error
 
       - name: Upload playstore APK
         if: always()

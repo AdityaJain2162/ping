@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOff
 import androidx.compose.material.icons.filled.LocationOn
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
@@ -49,7 +51,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aditya.ping.R
 import com.aditya.ping.data.ReminderEntity
-import com.aditya.ping.util.HapticUtil
+import com.aditya.ping.ui.theme.LocalHaptics
 import com.aditya.ping.util.UiFormats
 import com.aditya.ping.ui.theme.TimestampStyle
 
@@ -60,9 +62,11 @@ fun ReminderCard(
     onToggleCompleted: (Boolean) -> Unit,
     onDelete: () -> Unit,
     onClick: () -> Unit,
+    onClone: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val haptics = LocalHaptics.current
     val isOverdue = reminder.enabled && !reminder.completed && reminder.dueAt != null && reminder.dueAt < System.currentTimeMillis()
     val isDone = reminder.completed
 
@@ -84,13 +88,13 @@ fun ReminderCard(
             when (value) {
                 SwipeToDismissBoxValue.StartToEnd -> {
                     // Swipe right = toggle done
-                    HapticUtil.complete(context)
+                    haptics.confirm()
                     onToggleCompleted(!reminder.completed)
                     false // Don't dismiss — just toggle
                 }
                 SwipeToDismissBoxValue.EndToStart -> {
                     // Swipe left = delete
-                    HapticUtil.delete(context)
+                    haptics.heavy()
                     onDelete()
                     true // Dismiss
                 }
@@ -140,7 +144,7 @@ fun ReminderCard(
     ) {
         Card(
             onClick = {
-                HapticUtil.toggle(context)
+                haptics.tap()
                 onClick()
             },
             modifier = Modifier.fillMaxWidth(),
@@ -265,6 +269,25 @@ fun ReminderCard(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
+                                // Time-remaining badge for reminders due within the current week
+                                if (!isOverdue) {
+                                    UiFormats.formatTimeRemaining(context, due)?.let { remaining ->
+                                        Spacer(Modifier.width(8.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(MaterialTheme.shapes.extraSmall)
+                                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                        ) {
+                                            Text(
+                                                text = remaining,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.Bold,
+                                            )
+                                        }
+                                    }
+                                }
                             }
                             Spacer(Modifier.height(2.dp))
                         }
@@ -291,7 +314,7 @@ fun ReminderCard(
                             else Color.Transparent,
                         )
                         .clickable {
-                            HapticUtil.complete(context)
+                            haptics.confirm()
                             onToggleCompleted(!reminder.completed)
                         },
                     contentAlignment = Alignment.Center,
@@ -308,9 +331,25 @@ fun ReminderCard(
 
                 Spacer(Modifier.width(4.dp))
 
+                // Clone button
+                IconButton(
+                    onClick = {
+                        haptics.tap()
+                        onClone()
+                    },
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.ContentCopy,
+                        contentDescription = stringResource(R.string.reminder_clone),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+
                 // Switch for enabled/disabled (alarm active or not)
                 Switch(checked = reminder.enabled, onCheckedChange = {
-                    HapticUtil.toggle(context)
+                    haptics.tap()
                     onToggleEnabled(it)
                 })
             }

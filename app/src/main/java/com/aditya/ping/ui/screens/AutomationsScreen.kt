@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,17 +15,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Nfc
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.Webhook
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,16 +38,24 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,24 +63,52 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import com.aditya.ping.ui.theme.LocalHaptics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aditya.ping.R
 import com.aditya.ping.data.AutomationEntity
 import com.aditya.ping.data.AutomationRepository
+import com.aditya.ping.ui.components.BannerAd
+import com.aditya.ping.ui.components.LocationPickerField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AutomationsScreen() {
     val context = LocalContext.current
     val repo = remember { AutomationRepository.from(context) }
+    val savedPlaceRepo = remember { com.aditya.ping.data.SavedPlaceRepository.from(context) }
+    val savedPlaces by savedPlaceRepo.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val vm: AutomationsViewModel = viewModel(factory = AutomationsViewModel.Factory(repo))
     val automations by vm.automations.collectAsStateWithLifecycle()
+    val pendingUndo by vm.pendingUndo.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingAutomation by remember { mutableStateOf<AutomationEntity?>(null) }
+    var pendingDelete by remember { mutableStateOf<AutomationEntity?>(null) }
+    val haptics = LocalHaptics.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    // Show undo snackbar when an automation is deleted
+    LaunchedEffect(pendingUndo) {
+        val pending = pendingUndo ?: return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = context.getString(R.string.deleted, pending.name),
+            actionLabel = context.getString(R.string.undo),
+            duration = SnackbarDuration.Short,
+        )
+        if (result == SnackbarResult.ActionPerformed) {
+            vm.undoDelete()
+        } else {
+            vm.clearUndo()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (automations.isEmpty()) {
@@ -93,6 +135,15 @@ fun AutomationsScreen() {
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 8.dp),
                 )
+                Spacer(Modifier.height(16.dp))
+                OutlinedButton(onClick = {
+                    haptics.heavy()
+                    showAddDialog = true
+                }) {
+                    Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.automation_add))
+                }
             }
         } else {
             LazyColumn(
@@ -104,18 +155,51 @@ fun AutomationsScreen() {
                     AutomationCard(
                         automation = automation,
                         onToggle = { vm.toggleEnabled(automation.id, it) },
-                        onDelete = { vm.delete(automation.id) },
+                        onDelete = { pendingDelete = automation },
+                        onEdit = { editingAutomation = automation },
+                        onClone = { vm.clone(automation) },
                     )
                 }
             }
         }
 
         FloatingActionButton(
-            onClick = { showAddDialog = true },
+            onClick = {
+                haptics.heavy()
+                showAddDialog = true
+            },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
         ) {
             Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.automation_add))
         }
+
+        // Undo-delete snackbar
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
+        )
+    }
+
+    // Delete confirmation dialog
+    pendingDelete?.let { automation ->
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text(stringResource(R.string.automation_delete_title)) },
+            text = { Text(stringResource(R.string.automation_delete_message, automation.name)) },
+            confirmButton = {
+                Button(onClick = {
+                    haptics.heavy()
+                    vm.delete(automation.id)
+                    pendingDelete = null
+                }) { Text(stringResource(R.string.automation_delete_confirm)) }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = {
+                    haptics.tap()
+                    pendingDelete = null
+                }) { Text(stringResource(R.string.add_cancel)) }
+            },
+        )
     }
 
     if (showAddDialog) {
@@ -125,6 +209,19 @@ fun AutomationsScreen() {
                 vm.add(automation)
                 showAddDialog = false
             },
+            savedPlaces = savedPlaces,
+        )
+    }
+
+    editingAutomation?.let { automation ->
+        AddAutomationDialog(
+            automation = automation,
+            onDismiss = { editingAutomation = null },
+            onSave = { updated ->
+                vm.update(updated)
+                editingAutomation = null
+            },
+            savedPlaces = savedPlaces,
         )
     }
 }
@@ -134,13 +231,20 @@ private fun AutomationCard(
     automation: AutomationEntity,
     onToggle: (Boolean) -> Unit,
     onDelete: () -> Unit,
+    onEdit: () -> Unit,
+    onClone: () -> Unit,
 ) {
+    val haptics = LocalHaptics.current
     val (triggerIcon, triggerLabel) = triggerInfo(automation.triggerType)
     val actionLabel = actionLabel(automation.actionType)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        onClick = {
+            haptics.tap()
+            onEdit()
+        },
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -158,25 +262,70 @@ private fun AutomationCard(
                 Text(automation.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                 Text("$triggerLabel → $actionLabel", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Switch(checked = automation.enabled, onCheckedChange = onToggle)
-            IconButton(onClick = onDelete) {
+            Switch(checked = automation.enabled, onCheckedChange = {
+                haptics.tap()
+                onToggle(it)
+            })
+            IconButton(onClick = {
+                haptics.tap()
+                onClone()
+            }) {
+                Icon(Icons.Filled.ContentCopy, contentDescription = stringResource(R.string.automation_clone), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            IconButton(onClick = {
+                haptics.heavy()
+                onDelete()
+            }) {
                 Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun AddAutomationDialog(
     onDismiss: () -> Unit,
     onSave: (AutomationEntity) -> Unit,
+    automation: AutomationEntity? = null,
+    savedPlaces: List<com.aditya.ping.data.SavedPlaceEntity> = emptyList(),
 ) {
-    var name by remember { mutableStateOf("") }
-    var triggerType by remember { mutableIntStateOf(2) } // default: wifi connect
-    var triggerData by remember { mutableStateOf("") }
-    var actionType by remember { mutableIntStateOf(0) } // default: notification
-    var actionData by remember { mutableStateOf("") }
-    var actionMessage by remember { mutableStateOf("") }
+    val haptics = LocalHaptics.current
+    val context = LocalContext.current
+    var name by remember { mutableStateOf(automation?.name ?: "") }
+    var triggerType by remember { mutableIntStateOf(automation?.triggerType ?: 2) } // default: wifi connect
+    var triggerData by remember { mutableStateOf(automation?.triggerData ?: "") }
+    var actionType by remember { mutableIntStateOf(automation?.actionType ?: 0) } // default: notification
+    var actionData by remember { mutableStateOf(automation?.actionData ?: "") }
+    var actionMessage by remember { mutableStateOf(automation?.actionMessage ?: "") }
+    var permDenied by remember { mutableStateOf(false) }
+
+    // Validation: action types that require actionData
+    val actionDataRequired = actionType in listOf(1, 2, 3, 4, 5, 6, 10, 11)
+    val isActionDataValid = !actionDataRequired || actionData.isNotBlank()
+    val canSave = name.isNotBlank() && isActionDataValid
+
+    // Permission launcher for CALL_PHONE / SEND_SMS
+    val permLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
+    ) { results ->
+        val anyGranted = results.values.any { it }
+        permDenied = !anyGranted
+        if (anyGranted) haptics.confirm() else haptics.reject()
+    }
+
+    fun requestActionPermission(type: Int) {
+        val perms = when (type) {
+            1 -> arrayOf(android.Manifest.permission.CALL_PHONE)
+            3 -> arrayOf(android.Manifest.permission.SEND_SMS)
+            else -> return
+        }
+        val needed = perms.any {
+            androidx.core.content.ContextCompat.checkSelfPermission(context, it) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+        if (needed) permLauncher.launch(perms) else permDenied = false
+    }
 
     val triggers = listOf(
         0 to stringResource(R.string.trigger_location_arrive),
@@ -202,107 +351,242 @@ private fun AddAutomationDialog(
         11 to stringResource(R.string.action_webhook),
     )
 
-    AlertDialog(
+    Dialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.automation_add)) },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.automation_name)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(12.dp))
-                Text(stringResource(R.string.automation_trigger), style = MaterialTheme.typography.labelLarge)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    triggers.take(4).forEach { (type, label) ->
-                        androidx.compose.material3.FilterChip(
-                            selected = triggerType == type,
-                            onClick = { triggerType = type },
-                            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
+                // Header
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Filled.AutoAwesome,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp),
                         )
                     }
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        stringResource(if (automation != null) R.string.automation_edit else R.string.automation_add),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    triggers.drop(4).forEach { (type, label) ->
-                        androidx.compose.material3.FilterChip(
-                            selected = triggerType == type,
-                            onClick = { triggerType = type },
-                            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
-                        )
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = triggerData,
-                    onValueChange = { triggerData = it },
-                    label = { Text(triggerHint(triggerType)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(12.dp))
-                Text(stringResource(R.string.automation_action), style = MaterialTheme.typography.labelLarge)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    actions.take(4).forEach { (type, label) ->
-                        androidx.compose.material3.FilterChip(
-                            selected = actionType == type,
-                            onClick = { actionType = type },
-                            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
-                        )
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    actions.drop(4).forEach { (type, label) ->
-                        androidx.compose.material3.FilterChip(
-                            selected = actionType == type,
-                            onClick = { actionType = type },
-                            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
-                        )
-                    }
-                }
-                if (actionType !in listOf(0, 7, 8, 9)) {
-                    Spacer(Modifier.height(8.dp))
+
+                Spacer(Modifier.height(16.dp))
+
+                // Scrollable form body
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                ) {
                     OutlinedTextField(
-                        value = actionData,
-                        onValueChange = { actionData = it },
-                        label = { Text(actionHint(actionType)) },
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text(stringResource(R.string.automation_name)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                }
-                if (actionType == 2 || actionType == 3) {
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = actionMessage,
-                        onValueChange = { actionMessage = it },
-                        label = { Text(stringResource(R.string.quick_action_message_hint)) },
-                        modifier = Modifier.fillMaxWidth().height(72.dp),
+                    Spacer(Modifier.height(16.dp))
+
+                    // Trigger section
+                    Text(
+                        stringResource(R.string.automation_trigger),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
                     )
+                    Spacer(Modifier.height(8.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        triggers.forEach { (type, label) ->
+                            androidx.compose.material3.FilterChip(
+                                selected = triggerType == type,
+                                onClick = {
+                                    haptics.tap()
+                                    triggerType = type
+                                },
+                                label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    if (triggerType == 0 || triggerType == 1) {
+                        // Location trigger — use reusable location picker
+                        LocationPickerField(
+                            lat = triggerData.substringBefore(",").toDoubleOrNull() ?: 0.0,
+                            lng = triggerData.substringAfter(",").substringBefore(",").toDoubleOrNull() ?: 0.0,
+                            label = triggerData,
+                            onPicked = { lat, lng, label ->
+                                triggerData = "%.6f,%.6f,%s".format(lat, lng, label)
+                            },
+                            savedPlaces = savedPlaces,
+                        )
+                    } else {
+                        OutlinedTextField(
+                            value = triggerData,
+                            onValueChange = { triggerData = it },
+                            label = { Text(triggerHint(triggerType)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    Spacer(Modifier.height(16.dp))
+
+                    // Action section
+                    Text(
+                        stringResource(R.string.automation_action),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        actions.forEach { (type, label) ->
+                            androidx.compose.material3.FilterChip(
+                                selected = actionType == type,
+                                onClick = {
+                                    haptics.tap()
+                                    actionType = type
+                                    if (type == 1 || type == 3) requestActionPermission(type)
+                                },
+                                label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                            )
+                        }
+                    }
+                    if (permDenied && (actionType == 1 || actionType == 3)) {
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f))
+                                .padding(12.dp),
+                        ) {
+                            Text(
+                                stringResource(R.string.automation_perm_denied),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(onClick = {
+                                haptics.tap()
+                                requestActionPermission(actionType)
+                            }) {
+                                Text(stringResource(R.string.automation_perm_grant))
+                            }
+                        }
+                    }
+                    if (actionType !in listOf(0, 7, 8, 9)) {
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = actionData,
+                            onValueChange = { actionData = it },
+                            label = { Text(actionHint(actionType)) },
+                            singleLine = true,
+                            isError = actionDataRequired && actionData.isBlank(),
+                            supportingText = if (actionDataRequired && actionData.isBlank()) {
+                                { Text(stringResource(R.string.automation_action_data_required), style = MaterialTheme.typography.bodySmall) }
+                            } else null,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    if (actionType == 2 || actionType == 3) {
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = actionMessage,
+                            onValueChange = { actionMessage = it },
+                            label = { Text(stringResource(R.string.quick_action_message_hint)) },
+                            modifier = Modifier.fillMaxWidth().height(72.dp),
+                        )
+                    }
+                    Spacer(Modifier.height(20.dp))
+                }
+
+                // Action buttons (always visible, not scrolled)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    // Test button — runs the automation action immediately
+                    TextButton(
+                        onClick = {
+                            haptics.heavy()
+                            val testAutomation = AutomationEntity(
+                                id = automation?.id ?: 0,
+                                name = name.trim().ifBlank { "Test" },
+                                triggerType = triggerType,
+                                triggerData = triggerData.trim(),
+                                actionType = actionType,
+                                actionData = actionData.trim(),
+                                actionMessage = actionMessage.trim(),
+                                enabled = true,
+                                createdAt = System.currentTimeMillis(),
+                            )
+                            com.aditya.ping.util.AutomationExecutor.execute(context, testAutomation)
+                        },
+                        enabled = canSave,
+                    ) {
+                        Icon(
+                            Icons.Filled.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.automation_test))
+                    }
+                    Row {
+                    TextButton(onClick = {
+                        haptics.tap()
+                        onDismiss()
+                    }) {
+                        Text(stringResource(R.string.add_cancel))
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    TextButton(
+                        onClick = {
+                            if (canSave) {
+                                haptics.heavy()
+                                onSave(
+                                    AutomationEntity(
+                                        id = automation?.id ?: 0,
+                                        name = name.trim(),
+                                        triggerType = triggerType,
+                                        triggerData = triggerData.trim(),
+                                        actionType = actionType,
+                                        actionData = actionData.trim(),
+                                        actionMessage = actionMessage.trim(),
+                                        enabled = automation?.enabled ?: true,
+                                        createdAt = automation?.createdAt ?: System.currentTimeMillis(),
+                                    ),
+                                )
+                            }
+                        },
+                        enabled = canSave,
+                    ) { Text(stringResource(R.string.add_save)) }
+                    } // end inner Row
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                if (name.isNotBlank()) {
-                    onSave(
-                        AutomationEntity(
-                            name = name.trim(),
-                            triggerType = triggerType,
-                            triggerData = triggerData.trim(),
-                            actionType = actionType,
-                            actionData = actionData.trim(),
-                            actionMessage = actionMessage.trim(),
-                        ),
-                    )
-                }
-            }) { Text(stringResource(R.string.add_save)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.add_cancel)) }
-        },
-    )
+        }
+    }
 }
 
 @Composable

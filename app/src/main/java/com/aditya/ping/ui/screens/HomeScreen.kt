@@ -26,19 +26,31 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -57,6 +69,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import com.aditya.ping.ui.theme.LocalHaptics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -75,22 +88,42 @@ fun HomeScreen(
     onEdit: (Long) -> Unit,
     onSettings: () -> Unit,
     onSavedPlaces: () -> Unit,
-    onLists: () -> Unit,
     onCalendar: () -> Unit,
     onHistory: () -> Unit,
 ) {
     val context = LocalContext.current
     val appContext = context.applicationContext
+    val haptics = LocalHaptics.current
     val repo = remember { ReminderRepository.from(context) }
     val vm: HomeViewModel = viewModel(factory = HomeViewModel.Factory(repo, appContext))
     val reminders by vm.reminders.collectAsStateWithLifecycle()
     val searchQuery by vm.searchQuery.collectAsStateWithLifecycle()
     val stats by vm.stats.collectAsStateWithLifecycle()
     val sections by vm.sections.collectAsStateWithLifecycle()
+    val pendingUndo by vm.pendingUndo.collectAsStateWithLifecycle()
     val isSearching = searchQuery.isNotBlank()
 
     // Celebration overlay state
     var showCelebration by remember { mutableStateOf(false) }
+
+    // Snackbar host for undo-delete
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    // Show undo snackbar when a reminder is deleted
+    LaunchedEffect(pendingUndo) {
+        val pending = pendingUndo ?: return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = context.getString(R.string.deleted, pending.title),
+            actionLabel = context.getString(R.string.undo),
+            duration = SnackbarDuration.Short,
+        )
+        if (result == SnackbarResult.ActionPerformed) {
+            vm.undoDelete()
+        } else {
+            vm.clearUndo()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -118,18 +151,66 @@ fun HomeScreen(
                 }
             }
 
-            // Search bar
+            // Search bar with sort menu
+            var showSortMenu by remember { mutableStateOf(false) }
+            val sortMode by vm.sortMode.collectAsStateWithLifecycle()
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = vm::onSearchQueryChange,
                 placeholder = { Text(stringResource(R.string.home_search)) },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                trailingIcon = {
+                    Box {
+                        IconButton(onClick = {
+                            haptics.tap()
+                            showSortMenu = true
+                        }) {
+                            Icon(Icons.Filled.Sort, contentDescription = stringResource(R.string.sort_by))
+                        }
+                        DropdownMenu(
+                            expanded = showSortMenu,
+                            onDismissRequest = { showSortMenu = false },
+                        ) {
+                            SortMode.entries.forEach { mode ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(mode.labelRes)) },
+                                    onClick = {
+                                        haptics.tap()
+                                        vm.onSortModeChange(mode)
+                                        showSortMenu = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+                },
                 singleLine = true,
                 shape = MaterialTheme.shapes.large,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             )
+
+            // Filter chips
+            val currentFilter by vm.filter.collectAsStateWithLifecycle()
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .horizontalScroll(rememberScrollState()),
+            ) {
+                HomeFilter.entries.forEach { filter ->
+                    FilterChip(
+                        selected = currentFilter == filter,
+                        onClick = {
+                            haptics.tap()
+                            vm.onFilterChange(filter)
+                        },
+                        label = { Text(stringResource(filter.labelRes)) },
+                    )
+                }
+            }
 
             if (reminders.isEmpty() && !isSearching) {
                 EmptyState(onAdd = onAdd)
@@ -144,14 +225,21 @@ fun HomeScreen(
                             reminder = r,
                             onToggleEnabled = { enabled -> vm.toggleEnabled(r.id, enabled) },
                             onToggleCompleted = { completed ->
+                                haptics.heavy()
                                 vm.toggleCompleted(r.id, completed)
                                 if (completed) showCelebration = true
                             },
-                            onDelete = { vm.delete(r.id) },
+                            onDelete = {
+                                haptics.heavy()
+                                vm.delete(r.id)
+                            },
                             onClick = { onEdit(r.id) },
+                            onClone = {
+                                haptics.tap()
+                                vm.clone(r.id)
+                            },
                         )
                     }
-                    item { BannerAd() }
                 }
             } else {
                 LazyColumn(
@@ -163,6 +251,10 @@ fun HomeScreen(
                         item(key = "header_${section.title}") {
                             SectionHeader(
                                 section = section,
+                                onMarkAllDone = {
+                                    haptics.heavy()
+                                    vm.markAllDone(section.reminders.map { it.id })
+                                },
                                 modifier = Modifier.animateItem(),
                             )
                         }
@@ -174,16 +266,23 @@ fun HomeScreen(
                                 reminder = r,
                                 onToggleEnabled = { enabled -> vm.toggleEnabled(r.id, enabled) },
                                 onToggleCompleted = { completed ->
+                                    haptics.heavy()
                                     vm.toggleCompleted(r.id, completed)
                                     if (completed) showCelebration = true
                                 },
-                                onDelete = { vm.delete(r.id) },
+                                onDelete = {
+                                    haptics.heavy()
+                                    vm.delete(r.id)
+                                },
                                 onClick = { onEdit(r.id) },
+                                onClone = {
+                                    haptics.tap()
+                                    vm.clone(r.id)
+                                },
                                 modifier = Modifier.animateItem(),
                             )
                         }
                     }
-                    item { BannerAd() }
                 }
             }
         }
@@ -192,6 +291,12 @@ fun HomeScreen(
         CelebrationOverlay(
             visible = showCelebration,
             onDismiss = { showCelebration = false },
+        )
+
+        // Undo-delete snackbar
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
 }
@@ -326,7 +431,11 @@ private fun VerticalDivider() {
 }
 
 @Composable
-private fun SectionHeader(section: ReminderSection, modifier: Modifier = Modifier) {
+private fun SectionHeader(
+    section: ReminderSection,
+    onMarkAllDone: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -343,6 +452,17 @@ private fun SectionHeader(section: ReminderSection, modifier: Modifier = Modifie
         Spacer(Modifier.width(8.dp))
         HorizontalDivider(modifier = Modifier.weight(1f))
         Spacer(Modifier.width(8.dp))
+        if (onMarkAllDone != null && section.reminders.any { !it.completed }) {
+            IconButton(onClick = onMarkAllDone) {
+                Icon(
+                    Icons.Filled.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Spacer(Modifier.width(4.dp))
+        }
         Box(
             modifier = Modifier
                 .clip(MaterialTheme.shapes.small)
