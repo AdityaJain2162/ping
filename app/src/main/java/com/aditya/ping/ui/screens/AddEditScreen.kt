@@ -72,6 +72,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aditya.ping.R
 import com.aditya.ping.data.ReminderRepository
 import com.aditya.ping.ui.components.BannerAd
+import com.aditya.ping.ui.components.LocationPickerField
 import com.aditya.ping.ui.theme.LocalHaptics
 import com.aditya.ping.util.GeoCoderUtil
 import com.aditya.ping.util.LocationUtil
@@ -132,31 +133,6 @@ fun AddEditScreen(
             voiceLauncher.launch(intent)
         } catch (_: Exception) {
             Toast.makeText(context, R.string.add_voice_not_supported, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    val locationLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions(),
-    ) { result ->
-        if (result[Manifest.permission.ACCESS_FINE_LOCATION] == true) {
-            val util = LocationUtil(context)
-            scope.launch {
-                val loc = withContext(Dispatchers.IO) { util.currentLocation() }
-                if (loc != null) vm.onLocation(loc.latitude, loc.longitude, "Current location")
-            }
-        }
-    }
-
-    var showLocationDisabledDialog by remember { mutableStateOf(false) }
-    var locationSearchQuery by remember { mutableStateOf("") }
-    var locationSearchResults by remember { mutableStateOf<List<com.aditya.ping.util.GeoResult>>(emptyList()) }
-    val geoCoder = remember { GeoCoderUtil(context) }
-
-    LaunchedEffect(locationSearchQuery) {
-        if (locationSearchQuery.length >= 3) {
-            locationSearchResults = geoCoder.search(locationSearchQuery)
-        } else {
-            locationSearchResults = emptyList()
         }
     }
 
@@ -469,60 +445,13 @@ fun AddEditScreen(
                 title = stringResource(R.string.add_section_location),
                 icon = Icons.Filled.LocationOn,
             ) {
-                OutlinedTextField(
-                    value = locationSearchQuery,
-                    onValueChange = { locationSearchQuery = it },
-                    label = { Text(stringResource(R.string.add_location_search)) },
-                    leadingIcon = { Icon(Icons.Filled.LocationOn, contentDescription = null) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                LocationPickerField(
+                    lat = state.lat,
+                    lng = state.lng,
+                    label = state.addressLabel,
+                    onPicked = { lat, lng, label -> vm.onLocation(lat, lng, label) },
                 )
-                if (locationSearchResults.isNotEmpty()) {
-                    locationSearchResults.forEach { result ->
-                        TextButton(
-                            onClick = {
-                                haptics.tap()
-                                vm.onLocation(result.lat, result.lng, result.label)
-                                locationSearchQuery = ""
-                                locationSearchResults = emptyList()
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.size(8.dp))
-                            Text(
-                                result.label,
-                                style = MaterialTheme.typography.bodySmall,
-                                maxLines = 2,
-                            )
-                        }
-                    }
-                }
-                OutlinedButton(onClick = {
-                    haptics.tap()
-                    val util = LocationUtil(context)
-                    if (!util.isLocationEnabled()) {
-                        showLocationDisabledDialog = true
-                    } else if (!PermissionUtil.hasFineLocation(context)) {
-                        locationLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
-                    } else {
-                        scope.launch {
-                            val loc = withContext(Dispatchers.IO) { util.currentLocation() }
-                            if (loc != null) vm.onLocation(loc.latitude, loc.longitude, "Current location")
-                        }
-                    }
-                }, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Filled.MyLocation, contentDescription = null)
-                    Spacer(Modifier.size(8.dp))
-                    Text(stringResource(R.string.add_pick_current))
-                }
                 if (state.lat != 0.0 || state.lng != 0.0) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        state.addressLabel.ifBlank { "%.4f, %.4f".format(state.lat, state.lng) },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                     Text(stringResource(R.string.add_trigger_label), style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(
@@ -702,27 +631,6 @@ fun AddEditScreen(
             Spacer(Modifier.height(24.dp))
             BannerAd(modifier = Modifier.fillMaxWidth())
         }
-    }
-
-    if (showLocationDisabledDialog) {
-        AlertDialog(
-            onDismissRequest = { showLocationDisabledDialog = false },
-            title = { Text(stringResource(R.string.location_off_title)) },
-            text = { Text(stringResource(R.string.location_off_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showLocationDisabledDialog = false
-                    context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                }) {
-                    Text(stringResource(R.string.location_off_open_settings))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLocationDisabledDialog = false }) {
-                    Text(stringResource(R.string.add_cancel))
-                }
-            },
-        )
     }
 }
 

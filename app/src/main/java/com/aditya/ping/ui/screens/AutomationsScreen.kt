@@ -66,6 +66,7 @@ import com.aditya.ping.R
 import com.aditya.ping.data.AutomationEntity
 import com.aditya.ping.data.AutomationRepository
 import com.aditya.ping.ui.components.BannerAd
+import com.aditya.ping.ui.components.LocationPickerField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -321,13 +322,25 @@ private fun AddAutomationDialog(
                         }
                     }
                     Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = triggerData,
-                        onValueChange = { triggerData = it },
-                        label = { Text(triggerHint(triggerType)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    if (triggerType == 0 || triggerType == 1) {
+                        // Location trigger — use reusable location picker
+                        LocationPickerField(
+                            lat = triggerData.substringBefore(",").toDoubleOrNull() ?: 0.0,
+                            lng = triggerData.substringAfter(",").substringBefore(",").toDoubleOrNull() ?: 0.0,
+                            label = triggerData,
+                            onPicked = { lat, lng, label ->
+                                triggerData = "%.6f,%.6f,%s".format(lat, lng, label)
+                            },
+                        )
+                    } else {
+                        OutlinedTextField(
+                            value = triggerData,
+                            onValueChange = { triggerData = it },
+                            label = { Text(triggerHint(triggerType)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                     Spacer(Modifier.height(16.dp))
 
                     // Action section
