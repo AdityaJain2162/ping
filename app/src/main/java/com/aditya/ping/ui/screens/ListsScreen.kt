@@ -143,6 +143,7 @@ fun ListsScreen(onBack: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                BannerAd(modifier = Modifier.fillMaxWidth().padding(16.dp))
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(lists, key = { it.id }) { list ->

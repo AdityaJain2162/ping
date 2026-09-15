@@ -101,6 +101,7 @@ fun AutomationsScreen() {
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
+            BannerAd(modifier = Modifier.fillMaxWidth().padding(16.dp).align(Alignment.BottomCenter))
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),

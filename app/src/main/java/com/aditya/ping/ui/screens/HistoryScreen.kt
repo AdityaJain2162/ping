@@ -82,6 +82,9 @@ fun HistoryScreen(onBack: () -> Unit) {
                     )
                 }
             }
+            Box(modifier = Modifier.padding(inner).fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
+                BannerAd(modifier = Modifier.fillMaxWidth().padding(16.dp))
+            }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(inner),

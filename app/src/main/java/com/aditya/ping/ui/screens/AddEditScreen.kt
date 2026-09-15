@@ -525,6 +525,9 @@ fun AddEditScreen(
                     Text(stringResource(R.string.add_cancel))
                 }
             }
+
+            Spacer(Modifier.height(24.dp))
+            com.aditya.ping.ui.components.BannerAd(modifier = Modifier.fillMaxWidth())
         }
     }
 
