@@ -28,6 +28,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
+
+    companion object {
+        const val EXTRA_OPEN_REMINDER_ID = "open_reminder_id"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -46,6 +51,12 @@ class MainActivity : ComponentActivity() {
         val sharedText = if (intent?.action == Intent.ACTION_SEND) {
             intent.getStringExtra(Intent.EXTRA_TEXT)
         } else null
+        val openReminderId = intent?.getLongExtra(EXTRA_OPEN_REMINDER_ID, -1L) ?: -1L
+        val startRoute = when {
+            quickAdd || sharedText != null -> Routes.ADD
+            openReminderId > 0 -> Routes.edit(openReminderId)
+            else -> Routes.HOME
+        }
 
         // Read theme prefs synchronously to avoid the dark→light flash on launch.
         // DataStore loads asynchronously, so the initial render would use the default
@@ -73,7 +84,7 @@ class MainActivity : ComponentActivity() {
                 animationsEnabled = prefs.animationsEnabled,
                 hapticController = hapticController,
             ) {
-                if (!onboardingDone && !quickAdd && sharedText == null) {
+                if (!onboardingDone && !quickAdd && sharedText == null && openReminderId <= 0) {
                     OnboardingScreen(
                         onComplete = {
                             scope.launch { onboardingRepo.setCompleted() }
@@ -81,7 +92,7 @@ class MainActivity : ComponentActivity() {
                     )
                 } else {
                     PingNavHost(
-                        startRoute = if (quickAdd || sharedText != null) Routes.ADD else Routes.HOME,
+                        startRoute = startRoute,
                         sharedText = sharedText,
                     )
                 }
@@ -92,5 +103,11 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        // If a notification was tapped while the activity was alive, recreate
+        // so the new startRoute (edit screen) takes effect.
+        val openReminderId = intent.getLongExtra(EXTRA_OPEN_REMINDER_ID, -1L)
+        if (openReminderId > 0) {
+            recreate()
+        }
     }
 }

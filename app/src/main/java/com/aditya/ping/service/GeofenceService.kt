@@ -123,6 +123,7 @@ class GeofenceService : Service() {
 
         val openIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra(com.aditya.ping.MainActivity.EXTRA_OPEN_REMINDER_ID, r.id)
         }
         val pi = PendingIntent.getActivity(
             this, r.id.toInt(), openIntent,

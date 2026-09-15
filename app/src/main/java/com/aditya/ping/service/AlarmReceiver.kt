@@ -148,9 +148,10 @@ class AlarmReceiver : BroadcastReceiver() {
         val snoozePi = PendingIntent.getBroadcast(context, notifId + 10000, snoozeIntent, flag)
         val deferPi = PendingIntent.getBroadcast(context, notifId + 20000, deferIntent, flag)
 
-        // Tapping the notification opens the app
+        // Tapping the notification opens the app to the specific reminder
         val openIntent = Intent(context, com.aditya.ping.MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            putExtra(com.aditya.ping.MainActivity.EXTRA_OPEN_REMINDER_ID, reminder.id)
         }
         val openPi = PendingIntent.getActivity(
             context, notifId + 50000, openIntent,
