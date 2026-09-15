@@ -173,6 +173,24 @@ class HomeViewModel(
         _pendingUndo.value = null
     }
 
+    fun clone(id: Long) = viewModelScope.launch {
+        val reminder = repo.getById(id) ?: return@launch
+        val clone = reminder.copy(
+            id = 0,
+            title = "${reminder.title} (copy)",
+            enabled = false, // Cloned reminders start disabled to avoid surprise alarms
+            completed = false,
+            completedAt = null,
+            lastFiredAt = 0L,
+            createdAt = System.currentTimeMillis(),
+        )
+        val newId = repo.insert(clone)
+        val saved = clone.copy(id = newId)
+        if (saved.enabled && saved.dueAt != null) {
+            AlarmScheduler.schedule(appContext, saved)
+        }
+    }
+
     fun clearUndo() {
         _pendingUndo.value = null
     }

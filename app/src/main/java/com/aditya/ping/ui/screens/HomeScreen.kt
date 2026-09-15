@@ -179,6 +179,10 @@ fun HomeScreen(
                                 vm.delete(r.id)
                             },
                             onClick = { onEdit(r.id) },
+                            onClone = {
+                                haptics.tap()
+                                vm.clone(r.id)
+                            },
                         )
                     }
                 }
@@ -212,6 +216,10 @@ fun HomeScreen(
                                     vm.delete(r.id)
                                 },
                                 onClick = { onEdit(r.id) },
+                                onClone = {
+                                    haptics.tap()
+                                    vm.clone(r.id)
+                                },
                                 modifier = Modifier.animateItem(),
                             )
                         }

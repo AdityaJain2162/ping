@@ -119,6 +119,8 @@
 
     <!-- Automation strings -->
     <string name="automation_add">Add automation</string>
+    <string name="automation_edit">Edit automation</string>
+    <string name="automation_clone">Clone automation</string>
     <string name="automation_name">Automation name</string>
     <string name="automation_perm_call_title">Call permission needed</string>
     <string name="automation_perm_call_msg">Grant Call Phone permission so this automation can place calls automatically when triggered. Without it, the dialer will open and you\'ll need to tap Call manually.</string>
@@ -215,6 +217,7 @@
     <string name="history_empty">No completed reminders yet</string>
     <string name="home_view_history">View History (%1$d)</string>
     <string name="card_mark_done">Mark done</string>
+    <string name="reminder_clone">Clone reminder</string>
     <string name="alarm_default_title">Alarm</string>
     <string name="alarm_dismiss">Dismiss</string>
     <string name="alarm_snooze">Snooze</string>

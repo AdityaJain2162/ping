@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Nfc
 import androidx.compose.material.icons.filled.Wifi
@@ -76,6 +77,7 @@ fun AutomationsScreen() {
     val vm: AutomationsViewModel = viewModel(factory = AutomationsViewModel.Factory(repo))
     val automations by vm.automations.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingAutomation by remember { mutableStateOf<AutomationEntity?>(null) }
     val haptics = LocalHaptics.current
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -115,6 +117,8 @@ fun AutomationsScreen() {
                         automation = automation,
                         onToggle = { vm.toggleEnabled(automation.id, it) },
                         onDelete = { vm.delete(automation.id) },
+                        onEdit = { editingAutomation = automation },
+                        onClone = { vm.clone(automation) },
                     )
                 }
             }
@@ -140,6 +144,17 @@ fun AutomationsScreen() {
             },
         )
     }
+
+    editingAutomation?.let { automation ->
+        AddAutomationDialog(
+            automation = automation,
+            onDismiss = { editingAutomation = null },
+            onSave = { updated ->
+                vm.update(updated)
+                editingAutomation = null
+            },
+        )
+    }
 }
 
 @Composable
@@ -147,6 +162,8 @@ private fun AutomationCard(
     automation: AutomationEntity,
     onToggle: (Boolean) -> Unit,
     onDelete: () -> Unit,
+    onEdit: () -> Unit,
+    onClone: () -> Unit,
 ) {
     val haptics = LocalHaptics.current
     val (triggerIcon, triggerLabel) = triggerInfo(automation.triggerType)
@@ -155,6 +172,10 @@ private fun AutomationCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        onClick = {
+            haptics.tap()
+            onEdit()
+        },
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -177,6 +198,12 @@ private fun AutomationCard(
                 onToggle(it)
             })
             IconButton(onClick = {
+                haptics.tap()
+                onClone()
+            }) {
+                Icon(Icons.Filled.ContentCopy, contentDescription = stringResource(R.string.automation_clone), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            IconButton(onClick = {
                 haptics.heavy()
                 onDelete()
             }) {
@@ -191,15 +218,16 @@ private fun AutomationCard(
 private fun AddAutomationDialog(
     onDismiss: () -> Unit,
     onSave: (AutomationEntity) -> Unit,
+    automation: AutomationEntity? = null,
 ) {
     val haptics = LocalHaptics.current
     val context = LocalContext.current
-    var name by remember { mutableStateOf("") }
-    var triggerType by remember { mutableIntStateOf(2) } // default: wifi connect
-    var triggerData by remember { mutableStateOf("") }
-    var actionType by remember { mutableIntStateOf(0) } // default: notification
-    var actionData by remember { mutableStateOf("") }
-    var actionMessage by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf(automation?.name ?: "") }
+    var triggerType by remember { mutableIntStateOf(automation?.triggerType ?: 2) } // default: wifi connect
+    var triggerData by remember { mutableStateOf(automation?.triggerData ?: "") }
+    var actionType by remember { mutableIntStateOf(automation?.actionType ?: 0) } // default: notification
+    var actionData by remember { mutableStateOf(automation?.actionData ?: "") }
+    var actionMessage by remember { mutableStateOf(automation?.actionMessage ?: "") }
     var permDenied by remember { mutableStateOf(false) }
 
     // Permission launcher for CALL_PHONE / SEND_SMS
@@ -275,7 +303,7 @@ private fun AddAutomationDialog(
                     }
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        stringResource(R.string.automation_add),
+                        stringResource(if (automation != null) R.string.automation_edit else R.string.automation_add),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                     )
@@ -431,12 +459,15 @@ private fun AddAutomationDialog(
                                 haptics.heavy()
                                 onSave(
                                     AutomationEntity(
+                                        id = automation?.id ?: 0,
                                         name = name.trim(),
                                         triggerType = triggerType,
                                         triggerData = triggerData.trim(),
                                         actionType = actionType,
                                         actionData = actionData.trim(),
                                         actionMessage = actionMessage.trim(),
+                                        enabled = automation?.enabled ?: true,
+                                        createdAt = automation?.createdAt ?: System.currentTimeMillis(),
                                     ),
                                 )
                             }

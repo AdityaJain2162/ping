@@ -22,6 +22,14 @@ class AutomationsViewModel(
         repo.insert(automation)
     }
 
+    fun update(automation: AutomationEntity) = viewModelScope.launch {
+        repo.update(automation)
+    }
+
+    fun clone(automation: AutomationEntity) = viewModelScope.launch {
+        repo.insert(automation.copy(id = 0, name = "${automation.name} (copy)"))
+    }
+
     fun toggleEnabled(id: Long, enabled: Boolean) = viewModelScope.launch {
         repo.setEnabled(id, enabled)
     }

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOff
 import androidx.compose.material.icons.filled.LocationOn
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
@@ -60,6 +62,7 @@ fun ReminderCard(
     onToggleCompleted: (Boolean) -> Unit,
     onDelete: () -> Unit,
     onClick: () -> Unit,
+    onClone: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -307,6 +310,22 @@ fun ReminderCard(
                 }
 
                 Spacer(Modifier.width(4.dp))
+
+                // Clone button
+                IconButton(
+                    onClick = {
+                        HapticUtil.toggle(context)
+                        onClone()
+                    },
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.ContentCopy,
+                        contentDescription = stringResource(R.string.reminder_clone),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
 
                 // Switch for enabled/disabled (alarm active or not)
                 Switch(checked = reminder.enabled, onCheckedChange = {
