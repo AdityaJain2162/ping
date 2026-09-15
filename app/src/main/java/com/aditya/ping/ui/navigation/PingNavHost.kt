@@ -33,9 +33,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.scale
@@ -66,10 +69,19 @@ fun PingNavHost(startRoute: String = Routes.HOME, sharedText: String? = null) {
     val currentRoute = backStack?.destination?.route
     val isOnTab = currentRoute == Routes.HOME
     val scope = rememberCoroutineScope()
-    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val haptics = com.aditya.ping.ui.theme.LocalHaptics.current
 
     val tabRoutes = listOf(Routes.HOME, Routes.SAVED_PLACES, Routes.CALENDAR, Routes.AUTOMATIONS)
     val pagerState = rememberPagerState(pageCount = { tabRoutes.size })
+
+    // Haptic feedback when page changes via swipe (not just tab button taps)
+    var lastPage by remember { mutableStateOf(0) }
+    LaunchedEffect(pagerState.currentPage) {
+        if (pagerState.currentPage != lastPage) {
+            haptics.tap()
+            lastPage = pagerState.currentPage
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -111,7 +123,7 @@ fun PingNavHost(startRoute: String = Routes.HOME, sharedText: String? = null) {
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
-                                haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                haptics.tap()
                                 scope.launch { pagerState.animateScrollToPage(index) }
                             },
                             modifier = Modifier.testTag("tab_${tabRoutes[index]}"),

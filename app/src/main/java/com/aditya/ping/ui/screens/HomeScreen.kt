@@ -61,9 +61,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
+import com.aditya.ping.ui.theme.LocalHaptics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -88,7 +87,7 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val appContext = context.applicationContext
-    val haptics = LocalHapticFeedback.current
+    val haptics = LocalHaptics.current
     val repo = remember { ReminderRepository.from(context) }
     val vm: HomeViewModel = viewModel(factory = HomeViewModel.Factory(repo, appContext))
     val reminders by vm.reminders.collectAsStateWithLifecycle()
@@ -172,12 +171,12 @@ fun HomeScreen(
                             reminder = r,
                             onToggleEnabled = { enabled -> vm.toggleEnabled(r.id, enabled) },
                             onToggleCompleted = { completed ->
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                haptics.heavy()
                                 vm.toggleCompleted(r.id, completed)
                                 if (completed) showCelebration = true
                             },
                             onDelete = {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                haptics.heavy()
                                 vm.delete(r.id)
                             },
                             onClick = { onEdit(r.id) },
@@ -205,12 +204,12 @@ fun HomeScreen(
                                 reminder = r,
                                 onToggleEnabled = { enabled -> vm.toggleEnabled(r.id, enabled) },
                                 onToggleCompleted = { completed ->
-                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    haptics.heavy()
                                     vm.toggleCompleted(r.id, completed)
                                     if (completed) showCelebration = true
                                 },
                                 onDelete = {
-                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    haptics.heavy()
                                     vm.delete(r.id)
                                 },
                                 onClick = { onEdit(r.id) },

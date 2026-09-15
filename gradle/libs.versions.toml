@@ -13,6 +13,7 @@ workManager = "2.9.1"
 datastore = "1.1.1"
 material = "1.12.0"
 playServicesAds = "23.4.0"
+m3color = "2025.4"
 cucumber = "7.18.1"
 espresso = "3.7.0"
 testCore = "1.6.1"
@@ -41,6 +42,7 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "playServicesAds" }
+m3color = { group = "com.github.Kyant0", name = "m3color", version.ref = "m3color" }
 cucumber-android = { group = "io.cucumber", name = "cucumber-android", version.ref = "cucumber" }
 cucumber-picocontainer = { group = "io.cucumber", name = "cucumber-picocontainer", version.ref = "cucumber" }
 cucumber-gherkin-messages = { group = "io.cucumber", name = "cucumber-gherkin-messages", version.ref = "cucumber" }

@@ -92,6 +92,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.play.services.location)
     implementation(libs.material)
+    implementation(libs.m3color)
 
     // AdMob banner ads (Play Store build)
     implementation(libs.play.services.ads)

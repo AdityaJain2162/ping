@@ -30,8 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import com.aditya.ping.ui.theme.LocalHaptics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,7 +48,7 @@ import com.aditya.ping.ui.theme.TimestampStyle
 @Composable
 fun HistoryScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val haptics = LocalHapticFeedback.current
+    val haptics = LocalHaptics.current
     val repo = remember { ReminderRepository(PingDatabase.get(context).reminderDao()) }
     val vm: HomeViewModel = viewModel(factory = HomeViewModel.Factory(repo, context.applicationContext as Context))
     val history by vm.history.collectAsStateWithLifecycle()
@@ -60,7 +59,7 @@ fun HistoryScreen(onBack: () -> Unit) {
                 title = { Text(stringResource(R.string.history_title)) },
                 navigationIcon = {
                     IconButton(onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        haptics.tap()
                         onBack()
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

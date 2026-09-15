@@ -162,6 +162,16 @@
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_amoled">AMOLED black</string>
+    <string name="settings_accent_color">Accent Color</string>
+    <string name="settings_accent_color_title">Accent Color</string>
+    <string name="settings_dynamic_color">Dynamic Color</string>
+    <string name="settings_dynamic_color_desc">Android 12+ — blends palette with your wallpaper</string>
+    <string name="settings_animations">Animations</string>
+    <string name="settings_animations_desc">Enables transitions, spring motion, and color shifts</string>
+    <string name="settings_haptic_feedback">Haptic Feedback</string>
+    <string name="settings_haptic_feedback_desc">Vibrate on taps and actions</string>
+    <string name="settings_haptic_intensity">Haptic Intensity</string>
+    <string name="settings_haptic_intensity_desc">How strong the vibration feels</string>
     <string name="settings_amoled_toggle">AMOLED black</string>
     <string name="settings_about">About</string>
     <string name="settings_about_body">Ping — privacy-first location reminders. No account, no tracking, no cloud. Ads support development.</string>

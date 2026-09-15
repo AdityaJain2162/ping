@@ -39,8 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import com.aditya.ping.ui.theme.LocalHaptics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -53,7 +52,7 @@ import com.aditya.ping.ui.components.BannerAd
 @Composable
 fun ListsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val haptics = LocalHapticFeedback.current
+    val haptics = LocalHaptics.current
     val appContext = context.applicationContext
     val repo = remember { ReminderListRepository.from(context) }
     val vm: ListsViewModel = viewModel(factory = ListsViewModel.Factory(repo, appContext))
@@ -79,7 +78,7 @@ fun ListsScreen(onBack: () -> Unit) {
                 title = { Text(stringResource(R.string.lists_title)) },
                 navigationIcon = {
                     IconButton(onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        haptics.tap()
                         onBack()
                     }) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
@@ -130,7 +129,7 @@ fun ListsScreen(onBack: () -> Unit) {
 
             OutlinedButton(
                 onClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    haptics.heavy()
                     vm.add(newName, selectedColor)
                     newName = ""
                 },
@@ -177,7 +176,7 @@ fun ListsScreen(onBack: () -> Unit) {
                                     modifier = Modifier.weight(1f),
                                 )
                                 IconButton(onClick = {
-                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    haptics.heavy()
                                     vm.delete(list.id)
                                 }) {
                                     Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.add_cancel))

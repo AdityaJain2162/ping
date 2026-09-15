@@ -17,6 +17,7 @@ import com.aditya.ping.data.ThemeRepository
 import com.aditya.ping.ui.navigation.PingNavHost
 import com.aditya.ping.ui.navigation.Routes
 import com.aditya.ping.ui.theme.PingTheme
+import com.aditya.ping.ui.theme.rememberHapticController
 import com.aditya.ping.widget.DueTodayWidgetProvider
 
 class MainActivity : ComponentActivity() {
@@ -41,9 +42,19 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val themeRepo = remember { ThemeRepository(this) }
-            val themeMode by themeRepo.themeMode.collectAsState(initial = com.aditya.ping.domain.ThemeMode.SYSTEM)
+            val prefs by themeRepo.themePrefs.collectAsState(initial = com.aditya.ping.data.ThemePrefs())
+            val hapticController = rememberHapticController(
+                enabled = prefs.hapticFeedback,
+                intensityName = prefs.hapticIntensity,
+            )
 
-            PingTheme(themeMode = themeMode) {
+            PingTheme(
+                themeMode = prefs.mode,
+                accentName = prefs.accentName,
+                dynamicColor = prefs.dynamicColor,
+                animationsEnabled = prefs.animationsEnabled,
+                hapticController = hapticController,
+            ) {
                 PingNavHost(
                     startRoute = if (quickAdd || sharedText != null) Routes.ADD else Routes.HOME,
                     sharedText = sharedText,

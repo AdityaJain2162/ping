@@ -55,8 +55,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import com.aditya.ping.ui.theme.LocalHaptics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -74,7 +73,7 @@ import java.util.Locale
 @Suppress("UNUSED_PARAMETER")
 fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
     val context = LocalContext.current
-    val haptics = LocalHapticFeedback.current
+    val haptics = LocalHaptics.current
     val repo = remember { ReminderRepository.from(context) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -185,7 +184,7 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 IconButton(onClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    haptics.tap()
                     changeMonth(-1)
                 }) {
                     Icon(Icons.Filled.ChevronLeft, contentDescription = stringResource(R.string.calendar_prev_month))
@@ -209,7 +208,7 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
                     )
                 }
                 IconButton(onClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    haptics.tap()
                     changeMonth(1)
                 }) {
                     Icon(Icons.Filled.ChevronRight, contentDescription = stringResource(R.string.calendar_next_month))
@@ -288,7 +287,7 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
                             .weight(1f)
                             .aspectRatio(1f)
                             .clickable(enabled = isCurrentMonth) {
-                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                haptics.tap()
                                 selectedDate = cellCal.timeInMillis
                             },
                         contentAlignment = Alignment.Center,
@@ -363,15 +362,15 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
                     ReminderCard(
                         reminder = reminder,
                         onToggleEnabled = { enabled ->
-                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptics.tap()
                             scope.launch { repo.setEnabled(reminder.id, enabled) }
                         },
                         onToggleCompleted = { completed ->
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            haptics.heavy()
                             scope.launch { repo.setCompleted(reminder.id, completed, if (completed) System.currentTimeMillis() else null) }
                         },
                         onDelete = {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            haptics.heavy()
                             scope.launch { repo.deleteById(reminder.id) }
                         },
                         onClick = { onEdit(reminder.id) },

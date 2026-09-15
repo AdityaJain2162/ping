@@ -47,8 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import com.aditya.ping.ui.theme.LocalHaptics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -75,7 +74,7 @@ fun AddEditScreen(
     sharedText: String? = null,
 ) {
     val context = LocalContext.current
-    val haptics = LocalHapticFeedback.current
+    val haptics = LocalHaptics.current
     val appContext = context.applicationContext
     val repo = remember { ReminderRepository.from(context) }
     val vm: AddEditViewModel = viewModel(factory = AddEditViewModel.Factory(repo, appContext))
@@ -274,7 +273,7 @@ fun AddEditScreen(
                             androidx.compose.material3.FilterChip(
                                 selected = state.antiSleepDismiss == type,
                                 onClick = {
-                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    haptics.tap()
                                     vm.onAntiSleepChange(type)
                                 },
                                 label = { Text(label, style = MaterialTheme.typography.labelSmall) },
@@ -301,7 +300,7 @@ fun AddEditScreen(
                         FilterChip(
                             selected = state.recurrenceType == type,
                             onClick = {
-                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                haptics.tap()
                                 vm.onRecurrenceTypeChange(type)
                             },
                             label = { Text(label) },
@@ -316,7 +315,7 @@ fun AddEditScreen(
                         FilterChip(
                             selected = state.recurrenceType == type,
                             onClick = {
-                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                haptics.tap()
                                 vm.onRecurrenceTypeChange(type)
                             },
                             label = { Text(label) },
@@ -421,7 +420,7 @@ fun AddEditScreen(
                 FilterChip(
                     selected = state.triggerType == 0,
                     onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        haptics.tap()
                         vm.onTriggerChange(0)
                     },
                     label = { Text(stringResource(R.string.add_trigger_arrive)) },
@@ -429,7 +428,7 @@ fun AddEditScreen(
                 FilterChip(
                     selected = state.triggerType == 1,
                     onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        haptics.tap()
                         vm.onTriggerChange(1)
                     },
                     label = { Text(stringResource(R.string.add_trigger_leave)) },
@@ -462,7 +461,7 @@ fun AddEditScreen(
                     FilterChip(
                         selected = state.quickActionType == type,
                         onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptics.tap()
                             vm.onQuickActionTypeChange(type)
                         },
                         label = { Text(label) },
@@ -474,7 +473,7 @@ fun AddEditScreen(
                     FilterChip(
                         selected = state.quickActionType == type,
                         onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptics.tap()
                             vm.onQuickActionTypeChange(type)
                         },
                         label = { Text(label) },
@@ -521,7 +520,7 @@ fun AddEditScreen(
                     FilterChip(
                         selected = state.triggerMode == 0,
                         onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptics.tap()
                             vm.onTriggerModeChange(0)
                         },
                         label = { Text(stringResource(R.string.add_trigger_mode_or)) },
@@ -529,7 +528,7 @@ fun AddEditScreen(
                     FilterChip(
                         selected = state.triggerMode == 1,
                         onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptics.tap()
                             vm.onTriggerModeChange(1)
                         },
                         label = { Text(stringResource(R.string.add_trigger_mode_and)) },
@@ -548,14 +547,14 @@ fun AddEditScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                 Button(
                     onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        haptics.heavy()
                         vm.save()
                     },
                     enabled = !state.saving && state.title.isNotBlank(),
                     modifier = Modifier.weight(1f),
                 ) { Text(stringResource(R.string.add_save)) }
                 OutlinedButton(onClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    haptics.tap()
                     onCancel()
                 }, modifier = Modifier.weight(1f).testTag("cancelButton")) {
                     Text(stringResource(R.string.add_cancel))
