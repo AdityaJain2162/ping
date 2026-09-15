@@ -35,13 +35,19 @@ class MainActivity : ComponentActivity() {
         }
 
         val quickAdd = intent?.getBooleanExtra(DueTodayWidgetProvider.EXTRA_QUICK_ADD, false) ?: false
+        val sharedText = if (intent?.action == Intent.ACTION_SEND) {
+            intent.getStringExtra(Intent.EXTRA_TEXT)
+        } else null
 
         setContent {
             val themeRepo = remember { ThemeRepository(this) }
             val themeMode by themeRepo.themeMode.collectAsState(initial = com.aditya.ping.domain.ThemeMode.SYSTEM)
 
             PingTheme(themeMode = themeMode) {
-                PingNavHost(startRoute = if (quickAdd) Routes.ADD else Routes.HOME)
+                PingNavHost(
+                    startRoute = if (quickAdd || sharedText != null) Routes.ADD else Routes.HOME,
+                    sharedText = sharedText,
+                )
             }
         }
     }

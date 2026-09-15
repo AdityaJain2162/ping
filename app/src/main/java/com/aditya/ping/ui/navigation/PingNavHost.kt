@@ -58,7 +58,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PingNavHost(startRoute: String = Routes.HOME) {
+fun PingNavHost(startRoute: String = Routes.HOME, sharedText: String? = null) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
@@ -178,6 +178,7 @@ fun PingNavHost(startRoute: String = Routes.HOME) {
             composable(Routes.ADD) {
                 AddEditScreen(
                     reminderId = 0L,
+                    sharedText = sharedText,
                     onSaved = { nav.popBackStack() },
                     onCancel = { nav.popBackStack() },
                 )

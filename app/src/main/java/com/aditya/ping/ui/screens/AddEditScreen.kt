@@ -70,6 +70,7 @@ fun AddEditScreen(
     reminderId: Long,
     onSaved: () -> Unit,
     onCancel: () -> Unit,
+    sharedText: String? = null,
 ) {
     val context = LocalContext.current
     val appContext = context.applicationContext
@@ -125,8 +126,20 @@ fun AddEditScreen(
         ) {
             // Natural language quick-add (only when creating new)
             if (!state.isEdit) {
-                var nlInput by remember { mutableStateOf("") }
+                var nlInput by remember { mutableStateOf(sharedText ?: "") }
                 var nlParsed by remember { mutableStateOf(false) }
+                LaunchedEffect(sharedText) {
+                    if (!sharedText.isNullOrBlank() && !nlParsed) {
+                        val parsed = com.aditya.ping.util.NaturalLanguageParser.parse(sharedText)
+                        if (parsed.title.isNotBlank()) vm.onTitleChange(parsed.title)
+                        parsed.dueAt?.let { vm.onDueAtChange(it) }
+                        if (parsed.recurrenceType != 0) vm.onRecurrenceTypeChange(parsed.recurrenceType)
+                        if (parsed.isAlarm) vm.onAlarmToggle(true)
+                        parsed.triggerType?.let { vm.onTriggerChange(it) }
+                        if (parsed.addressLabel.isNotBlank()) vm.onLocation(0.0, 0.0, parsed.addressLabel)
+                        nlParsed = true
+                    }
+                }
                 OutlinedTextField(
                     value = nlInput,
                     onValueChange = { nlInput = it; nlParsed = false },
