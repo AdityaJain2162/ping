@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,6 +35,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -57,6 +59,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import com.aditya.ping.ui.theme.LocalHaptics
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -109,6 +112,10 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
     val endOfDay = selCal.timeInMillis
 
     val dayReminders by repo.observeByDateRange(startOfDay, endOfDay)
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+
+    // Location-only reminders (no dueAt) — shown in a separate section
+    val locationReminders by repo.observeLocationOnly()
         .collectAsStateWithLifecycle(initialValue = emptyList())
 
     val monthFmt = remember { SimpleDateFormat("MMMM yyyy", Locale.getDefault()) }
@@ -358,6 +365,50 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
             }
         } else {
             items(dayReminders, key = { it.id }) { reminder ->
+                Box(modifier = Modifier.padding(bottom = 8.dp)) {
+                    ReminderCard(
+                        reminder = reminder,
+                        onToggleEnabled = { enabled ->
+                            haptics.tap()
+                            scope.launch { repo.setEnabled(reminder.id, enabled) }
+                        },
+                        onToggleCompleted = { completed ->
+                            haptics.heavy()
+                            scope.launch { repo.setCompleted(reminder.id, completed, if (completed) System.currentTimeMillis() else null) }
+                        },
+                        onDelete = {
+                            haptics.heavy()
+                            scope.launch { repo.deleteById(reminder.id) }
+                        },
+                        onClick = { onEdit(reminder.id) },
+                    )
+                }
+            }
+        }
+
+        // Location-only reminders (no due date) — always visible regardless of selected day
+        if (locationReminders.isNotEmpty()) {
+            item(key = "locationHeader") {
+                Spacer(Modifier.height(16.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.LocationOn,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        stringResource(R.string.calendar_location_reminders),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+            items(locationReminders.size, key = { index -> "loc_${locationReminders[index].id}" }) { index ->
+                val reminder = locationReminders[index]
                 Box(modifier = Modifier.padding(bottom = 8.dp)) {
                     ReminderCard(
                         reminder = reminder,

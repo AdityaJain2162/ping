@@ -60,6 +60,7 @@
     <!-- Calendar -->
     <string name="calendar_title">Calendar</string>
     <string name="calendar_no_reminders">No reminders on this day.</string>
+    <string name="calendar_location_reminders">Location reminders</string>
 
     <!-- Data -->
     <string name="data_title">Backup and Restore</string>

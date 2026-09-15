@@ -26,6 +26,9 @@ interface ReminderDao {
     @Query("SELECT * FROM reminders WHERE dueAt IS NOT NULL AND dueAt >= :startOfDay AND dueAt < :endOfDay ORDER BY dueAt ASC")
     fun observeByDateRange(startOfDay: Long, endOfDay: Long): Flow<List<ReminderEntity>>
 
+    @Query("SELECT * FROM reminders WHERE (lat != 0.0 OR lng != 0.0) AND dueAt IS NULL AND enabled = 1 AND completed = 0 ORDER BY createdAt DESC")
+    fun observeLocationOnly(): Flow<List<ReminderEntity>>
+
     @Query("SELECT * FROM reminders WHERE enabled = 1 AND completed = 0 ORDER BY createdAt DESC")
     fun observeEnabled(): Flow<List<ReminderEntity>>
 
