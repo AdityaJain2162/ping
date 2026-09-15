@@ -1,6 +1,7 @@
 package com.aditya.ping
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -14,7 +15,9 @@ import androidx.compose.runtime.remember
 import androidx.core.content.ContextCompat
 import com.aditya.ping.data.ThemeRepository
 import com.aditya.ping.ui.navigation.PingNavHost
+import com.aditya.ping.ui.navigation.Routes
 import com.aditya.ping.ui.theme.PingTheme
+import com.aditya.ping.widget.DueTodayWidgetProvider
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,13 +34,20 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        val quickAdd = intent?.getBooleanExtra(DueTodayWidgetProvider.EXTRA_QUICK_ADD, false) ?: false
+
         setContent {
             val themeRepo = remember { ThemeRepository(this) }
             val themeMode by themeRepo.themeMode.collectAsState(initial = com.aditya.ping.domain.ThemeMode.SYSTEM)
 
             PingTheme(themeMode = themeMode) {
-                PingNavHost()
+                PingNavHost(startRoute = if (quickAdd) Routes.ADD else Routes.HOME)
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
     }
 }

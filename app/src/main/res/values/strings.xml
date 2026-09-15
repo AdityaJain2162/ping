@@ -211,4 +211,10 @@
     <string name="add_alarm_anti_sleep_long_press">Long-press 3s</string>
     <string name="calendar_prev_month">Previous month</string>
     <string name="calendar_next_month">Next month</string>
+    <string name="widget_due_today">Due Today</string>
+    <string name="widget_due_today_desc">Shows today\'s reminders and alarms at a glance</string>
+    <string name="widget_quick_add">Quick add</string>
+    <string name="widget_no_reminders">No reminders today</string>
+    <string name="widget_no_reminders_desc">Enjoy your day — tap to add one</string>
+    <string name="widget_reminders">reminder(s)</string>
 </resources>

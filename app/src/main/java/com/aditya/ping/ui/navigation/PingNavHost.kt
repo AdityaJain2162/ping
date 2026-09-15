@@ -58,7 +58,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PingNavHost() {
+fun PingNavHost(startRoute: String = Routes.HOME) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
@@ -146,7 +146,7 @@ fun PingNavHost() {
     ) { inner ->
         NavHost(
             navController = nav,
-            startDestination = Routes.HOME,
+            startDestination = startRoute,
             modifier = Modifier.fillMaxSize().padding(inner),
             enterTransition = { fadeIn() },
             exitTransition = { fadeOut() },
