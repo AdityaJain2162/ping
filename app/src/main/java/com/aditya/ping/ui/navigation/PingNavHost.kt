@@ -56,7 +56,6 @@ import com.aditya.ping.ui.screens.AutomationsScreen
 import com.aditya.ping.ui.screens.CalendarScreen
 import com.aditya.ping.ui.screens.HistoryScreen
 import com.aditya.ping.ui.screens.HomeScreen
-import com.aditya.ping.ui.screens.ListsScreen
 import com.aditya.ping.ui.screens.SavedPlacesScreen
 import com.aditya.ping.ui.screens.SettingsScreen
 import kotlinx.coroutines.launch
@@ -97,11 +96,6 @@ fun PingNavHost(startRoute: String = Routes.HOME, sharedText: String? = null) {
                         }
                     },
                     actions = {
-                        if (pagerState.currentPage == 0) {
-                            IconButton(onClick = { nav.navigate(Routes.LISTS) }) {
-                                Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.lists_title))
-                            }
-                        }
                         IconButton(onClick = { nav.navigate(Routes.SETTINGS) }) {
                             Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings_title))
                         }
@@ -177,7 +171,6 @@ fun PingNavHost(startRoute: String = Routes.HOME, sharedText: String? = null) {
                                 onEdit = { id -> nav.navigate(Routes.edit(id)) },
                                 onSettings = { nav.navigate(Routes.SETTINGS) },
                                 onSavedPlaces = { scope.launch { pagerState.animateScrollToPage(1) } },
-                                onLists = { nav.navigate(Routes.LISTS) },
                                 onCalendar = { scope.launch { pagerState.animateScrollToPage(2) } },
                                 onHistory = { nav.navigate(Routes.HISTORY) },
                             )
@@ -214,9 +207,6 @@ fun PingNavHost(startRoute: String = Routes.HOME, sharedText: String? = null) {
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(onBack = { nav.popBackStack() })
-            }
-            composable(Routes.LISTS) {
-                ListsScreen(onBack = { nav.popBackStack() })
             }
             composable(Routes.HISTORY) {
                 HistoryScreen(onBack = { nav.popBackStack() })

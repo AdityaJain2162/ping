@@ -4,11 +4,18 @@ import android.Manifest
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Bundle
 import android.provider.Settings
+import android.speech.RecognizerIntent
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,22 +24,29 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
-import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -45,17 +59,20 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import com.aditya.ping.ui.theme.LocalHaptics
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aditya.ping.R
 import com.aditya.ping.data.ReminderRepository
-import com.aditya.ping.util.AlarmScheduler
+import com.aditya.ping.ui.components.BannerAd
+import com.aditya.ping.ui.theme.LocalHaptics
 import com.aditya.ping.util.GeoCoderUtil
 import com.aditya.ping.util.LocationUtil
 import com.aditya.ping.util.PermissionUtil
@@ -83,6 +100,40 @@ fun AddEditScreen(
 
     LaunchedEffect(reminderId) { vm.load(reminderId) }
     LaunchedEffect(state.saved) { if (state.saved) onSaved() }
+
+    // Pre-fill title from shared text (voice assistant / share intent)
+    LaunchedEffect(sharedText) {
+        if (!sharedText.isNullOrBlank() && state.title.isBlank()) {
+            vm.onTitleChange(sharedText)
+        }
+    }
+
+    // Voice input launcher — uses Google speech recognition activity
+    val voiceLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val text = result.data
+                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull()
+            if (!text.isNullOrBlank()) {
+                vm.onTitleChange(text)
+            }
+        }
+    }
+
+    fun startVoiceInput() {
+        haptics.tap()
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_PROMPT, context.getString(R.string.add_voice_input))
+        }
+        try {
+            voiceLauncher.launch(intent)
+        } catch (_: Exception) {
+            Toast.makeText(context, R.string.add_voice_not_supported, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     val locationLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -124,426 +175,425 @@ fun AddEditScreen(
                 .padding(inner)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // Natural language quick-add (only when creating new)
-            if (!state.isEdit) {
-                var nlInput by remember { mutableStateOf(sharedText ?: "") }
-                var nlParsed by remember { mutableStateOf(false) }
-                LaunchedEffect(sharedText) {
-                    if (!sharedText.isNullOrBlank() && !nlParsed) {
-                        val parsed = com.aditya.ping.util.NaturalLanguageParser.parse(sharedText)
-                        if (parsed.title.isNotBlank()) vm.onTitleChange(parsed.title)
-                        parsed.dueAt?.let { vm.onDueAtChange(it) }
-                        if (parsed.recurrenceType != 0) vm.onRecurrenceTypeChange(parsed.recurrenceType)
-                        if (parsed.isAlarm) vm.onAlarmToggle(true)
-                        parsed.triggerType?.let { vm.onTriggerChange(it) }
-                        if (parsed.addressLabel.isNotBlank()) vm.onLocation(0.0, 0.0, parsed.addressLabel)
-                        nlParsed = true
-                    }
-                }
-                OutlinedTextField(
-                    value = nlInput,
-                    onValueChange = { nlInput = it; nlParsed = false },
-                    label = { Text(stringResource(R.string.add_quick_add)) },
-                    placeholder = { Text(stringResource(R.string.add_quick_add_hint)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    trailingIcon = {
-                        TextButton(
-                            onClick = {
-                                val parsed = com.aditya.ping.util.NaturalLanguageParser.parse(nlInput)
-                                if (parsed.title.isNotBlank()) vm.onTitleChange(parsed.title)
-                                parsed.dueAt?.let { vm.onDueAtChange(it) }
-                                if (parsed.recurrenceType != 0) vm.onRecurrenceTypeChange(parsed.recurrenceType)
-                                if (parsed.isAlarm) vm.onAlarmToggle(true)
-                                parsed.triggerType?.let { vm.onTriggerChange(it) }
-                                if (parsed.addressLabel.isNotBlank()) vm.onLocation(0.0, 0.0, parsed.addressLabel)
-                                nlParsed = true
-                            },
-                        ) {
-                            Text(stringResource(R.string.add_quick_add_parse))
-                        }
-                    },
-                )
-                if (nlParsed) {
-                    Text(
-                        stringResource(R.string.add_quick_add_parsed),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
+            // ── Title + voice input ──
             OutlinedTextField(
                 value = state.title,
                 onValueChange = vm::onTitleChange,
                 label = { Text(stringResource(R.string.add_title_label)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
+                trailingIcon = {
+                    IconButton(onClick = { startVoiceInput() }) {
+                        Icon(
+                            Icons.Filled.Mic,
+                            contentDescription = stringResource(R.string.add_voice_input),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                },
             )
             OutlinedTextField(
                 value = state.note,
                 onValueChange = vm::onNoteChange,
                 label = { Text(stringResource(R.string.add_note_label)) },
-                modifier = Modifier.fillMaxWidth().height(120.dp),
+                modifier = Modifier.fillMaxWidth().height(100.dp),
             )
 
-            // --- Time trigger section ---
-            Text(stringResource(R.string.add_time_label), style = MaterialTheme.typography.labelLarge)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.size(8.dp))
-                if (state.dueAt != null) {
-                    Text(
-                        UiFormats.formatReminderDate(state.dueAt!!),
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f),
-                    )
-                    TextButton(onClick = { vm.onDueAtChange(null) }) {
-                        Text(stringResource(R.string.add_time_clear))
+            // ── Time section ──
+            SectionCard(
+                title = stringResource(R.string.add_section_time),
+                icon = Icons.Filled.Schedule,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (state.dueAt != null) {
+                        Text(
+                            UiFormats.formatReminderDate(state.dueAt!!),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = {
+                            haptics.tap()
+                            vm.onDueAtChange(null)
+                        }) {
+                            Text(stringResource(R.string.add_time_clear))
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = {
+                                haptics.tap()
+                                showDateTimePicker(context, vm::onDueAtChange)
+                            },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Filled.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.size(8.dp))
+                            Text(stringResource(R.string.add_time_pick))
+                        }
                     }
-                } else {
-                    OutlinedButton(onClick = { showDateTimePicker(context, vm::onDueAtChange) }) {
-                        Text(stringResource(R.string.add_time_pick))
+                }
+
+                // Alarm toggle (only when time is set)
+                if (state.dueAt != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.add_alarm_toggle), style = MaterialTheme.typography.bodyMedium)
+                        Switch(
+                            checked = state.isAlarm,
+                            onCheckedChange = {
+                                haptics.confirm()
+                                vm.onAlarmToggle(it)
+                            },
+                        )
+                    }
+                    if (state.isAlarm) {
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = state.snoozeMinutes.toString(),
+                            onValueChange = { v -> v.toIntOrNull()?.let { vm.onSnoozeChange(it) } },
+                            label = { Text(stringResource(R.string.add_snooze_label)) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        // Ringtone picker
+                        val ringtoneLauncher = rememberLauncherForActivityResult(
+                            ActivityResultContracts.StartActivityForResult(),
+                        ) { result ->
+                            @Suppress("DEPRECATION")
+                            val uri = result.data?.getParcelableExtra<android.net.Uri>(android.media.RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+                            if (uri != null) {
+                                vm.onRingtoneUriChange(uri.toString())
+                            }
+                        }
+                        OutlinedButton(onClick = {
+                            haptics.tap()
+                            val intent = Intent(android.media.RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+                                putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_TYPE, android.media.RingtoneManager.TYPE_ALARM)
+                                putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_TITLE, "Select alarm tone")
+                                putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+                                putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+                                if (state.ringtoneUri.isNotBlank()) {
+                                    putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, android.net.Uri.parse(state.ringtoneUri))
+                                }
+                            }
+                            ringtoneLauncher.launch(intent)
+                        }, modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Filled.Alarm, contentDescription = null)
+                            Spacer(Modifier.size(8.dp))
+                            Text(if (state.ringtoneUri.isNotBlank()) stringResource(R.string.add_ringtone_custom) else stringResource(R.string.add_ringtone_pick))
+                        }
+                        // Anti-sleep dismiss selector
+                        Text(
+                            stringResource(R.string.add_alarm_anti_sleep),
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            listOf(
+                                0 to stringResource(R.string.add_alarm_anti_sleep_none),
+                                1 to stringResource(R.string.add_alarm_anti_sleep_math),
+                                2 to stringResource(R.string.add_alarm_anti_sleep_long_press),
+                            ).forEach { (type, label) ->
+                                FilterChip(
+                                    selected = state.antiSleepDismiss == type,
+                                    onClick = {
+                                        haptics.tap()
+                                        vm.onAntiSleepChange(type)
+                                    },
+                                    label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Recurrence (only when time is set)
+                if (state.dueAt != null) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(stringResource(R.string.add_recurrence_label), style = MaterialTheme.typography.labelMedium)
+                    val recurrenceOptions = remember {
+                        listOf(
+                            0 to "Once", 1 to "Daily", 2 to "Weekly",
+                            3 to "Weekdays", 4 to "Weekends", 5 to "Monthly",
+                        )
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        recurrenceOptions.take(3).forEach { (type, label) ->
+                            FilterChip(
+                                selected = state.recurrenceType == type,
+                                onClick = {
+                                    haptics.tap()
+                                    vm.onRecurrenceTypeChange(type)
+                                },
+                                label = { Text(label) },
+                            )
+                        }
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        recurrenceOptions.drop(3).forEach { (type, label) ->
+                            FilterChip(
+                                selected = state.recurrenceType == type,
+                                onClick = {
+                                    haptics.tap()
+                                    vm.onRecurrenceTypeChange(type)
+                                },
+                                label = { Text(label) },
+                            )
+                        }
+                    }
+                    if (state.recurrenceType == 7) {
+                        OutlinedTextField(
+                            value = state.recurrenceInterval.toString(),
+                            onValueChange = { v -> v.toIntOrNull()?.let { vm.onRecurrenceIntervalChange(it) } },
+                            label = { Text(stringResource(R.string.add_recurrence_interval)) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
                 }
             }
 
-            // --- Alarm toggle (only shown when time is set) ---
-            if (state.dueAt != null) {
+            // ── Location section ──
+            SectionCard(
+                title = stringResource(R.string.add_section_location),
+                icon = Icons.Filled.LocationOn,
+            ) {
+                OutlinedTextField(
+                    value = locationSearchQuery,
+                    onValueChange = { locationSearchQuery = it },
+                    label = { Text(stringResource(R.string.add_location_search)) },
+                    leadingIcon = { Icon(Icons.Filled.LocationOn, contentDescription = null) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (locationSearchResults.isNotEmpty()) {
+                    locationSearchResults.forEach { result ->
+                        TextButton(
+                            onClick = {
+                                haptics.tap()
+                                vm.onLocation(result.lat, result.lng, result.label)
+                                locationSearchQuery = ""
+                                locationSearchResults = emptyList()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.size(8.dp))
+                            Text(
+                                result.label,
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 2,
+                            )
+                        }
+                    }
+                }
+                OutlinedButton(onClick = {
+                    haptics.tap()
+                    val util = LocationUtil(context)
+                    if (!util.isLocationEnabled()) {
+                        showLocationDisabledDialog = true
+                    } else if (!PermissionUtil.hasFineLocation(context)) {
+                        locationLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
+                    } else {
+                        scope.launch {
+                            val loc = withContext(Dispatchers.IO) { util.currentLocation() }
+                            if (loc != null) vm.onLocation(loc.latitude, loc.longitude, "Current location")
+                        }
+                    }
+                }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Filled.MyLocation, contentDescription = null)
+                    Spacer(Modifier.size(8.dp))
+                    Text(stringResource(R.string.add_pick_current))
+                }
+                if (state.lat != 0.0 || state.lng != 0.0) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        state.addressLabel.ifBlank { "%.4f, %.4f".format(state.lat, state.lng) },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(stringResource(R.string.add_trigger_label), style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = state.triggerType == 0,
+                            onClick = {
+                                haptics.tap()
+                                vm.onTriggerChange(0)
+                            },
+                            label = { Text(stringResource(R.string.add_trigger_arrive)) },
+                        )
+                        FilterChip(
+                            selected = state.triggerType == 1,
+                            onClick = {
+                                haptics.tap()
+                                vm.onTriggerChange(1)
+                            },
+                            label = { Text(stringResource(R.string.add_trigger_leave)) },
+                        )
+                    }
+                    OutlinedTextField(
+                        value = state.radiusMeters.toString(),
+                        onValueChange = { v -> v.toIntOrNull()?.let { vm.onRadiusChange(it) } },
+                        label = { Text(stringResource(R.string.add_radius_label)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            // ── Quick action section ──
+            SectionCard(
+                title = stringResource(R.string.add_section_actions),
+                icon = Icons.Filled.Bolt,
+            ) {
+                val quickActions = listOf(
+                    0 to stringResource(R.string.quick_action_none),
+                    1 to stringResource(R.string.quick_action_call),
+                    2 to stringResource(R.string.quick_action_whatsapp),
+                    6 to stringResource(R.string.quick_action_sms),
+                    7 to stringResource(R.string.quick_action_whatsapp_group),
+                    3 to stringResource(R.string.quick_action_open_app),
+                    4 to stringResource(R.string.quick_action_navigate),
+                    5 to stringResource(R.string.quick_action_url),
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    quickActions.take(4).forEach { (type, label) ->
+                        FilterChip(
+                            selected = state.quickActionType == type,
+                            onClick = {
+                                haptics.tap()
+                                vm.onQuickActionTypeChange(type)
+                            },
+                            label = { Text(label) },
+                        )
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    quickActions.drop(4).forEach { (type, label) ->
+                        FilterChip(
+                            selected = state.quickActionType == type,
+                            onClick = {
+                                haptics.tap()
+                                vm.onQuickActionTypeChange(type)
+                            },
+                            label = { Text(label) },
+                        )
+                    }
+                }
+                if (state.quickActionType != 0 && state.quickActionType != 4) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = state.quickActionData,
+                        onValueChange = vm::onQuickActionDataChange,
+                        label = {
+                            Text(
+                                when (state.quickActionType) {
+                                    1 -> stringResource(R.string.quick_action_call_hint)
+                                    2 -> stringResource(R.string.quick_action_whatsapp_hint)
+                                    6 -> stringResource(R.string.quick_action_sms_hint)
+                                    7 -> stringResource(R.string.quick_action_whatsapp_group_hint)
+                                    3 -> stringResource(R.string.quick_action_app_hint)
+                                    5 -> stringResource(R.string.quick_action_url_hint)
+                                    else -> ""
+                                },
+                            )
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (state.quickActionType == 2 || state.quickActionType == 6) {
+                        OutlinedTextField(
+                            value = state.quickActionMessage,
+                            onValueChange = vm::onQuickActionMessageChange,
+                            label = { Text(stringResource(R.string.quick_action_message_hint)) },
+                            modifier = Modifier.fillMaxWidth().height(80.dp),
+                        )
+                    }
+                }
+            }
+
+            // ── Advanced section: nag mode + combined trigger ──
+            SectionCard(
+                title = stringResource(R.string.add_section_advanced),
+                icon = Icons.Filled.Alarm,
+            ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(stringResource(R.string.add_alarm_toggle), style = MaterialTheme.typography.bodyMedium)
-                    androidx.compose.material3.Switch(
-                        checked = state.isAlarm,
-                        onCheckedChange = vm::onAlarmToggle,
+                    Text(stringResource(R.string.add_nag_toggle), style = MaterialTheme.typography.bodyMedium)
+                    Switch(
+                        checked = state.nagMode,
+                        onCheckedChange = {
+                            haptics.confirm()
+                            vm.onNagModeToggle(it)
+                        },
                     )
                 }
-                if (state.isAlarm) {
+                if (state.nagMode) {
                     OutlinedTextField(
-                        value = state.snoozeMinutes.toString(),
-                        onValueChange = { v -> v.toIntOrNull()?.let { vm.onSnoozeChange(it) } },
-                        label = { Text(stringResource(R.string.add_snooze_label)) },
+                        value = state.nagIntervalMinutes.toString(),
+                        onValueChange = { v -> v.toIntOrNull()?.let { vm.onNagIntervalChange(it) } },
+                        label = { Text(stringResource(R.string.add_nag_interval)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    // Ringtone picker
-                    val ringtoneLauncher = rememberLauncherForActivityResult(
-                        ActivityResultContracts.StartActivityForResult(),
-                    ) { result ->
-                        val uri = result.data?.getParcelableExtra<android.net.Uri>(android.media.RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
-                        if (uri != null) {
-                            vm.onRingtoneUriChange(uri.toString())
-                        }
+                }
+
+                val hasLocation = state.lat != 0.0 || state.lng != 0.0
+                val hasTime = state.dueAt != null
+                if (hasLocation && hasTime) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(stringResource(R.string.add_trigger_mode), style = MaterialTheme.typography.labelMedium)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = state.triggerMode == 0,
+                            onClick = {
+                                haptics.tap()
+                                vm.onTriggerModeChange(0)
+                            },
+                            label = { Text(stringResource(R.string.add_trigger_mode_or)) },
+                        )
+                        FilterChip(
+                            selected = state.triggerMode == 1,
+                            onClick = {
+                                haptics.tap()
+                                vm.onTriggerModeChange(1)
+                            },
+                            label = { Text(stringResource(R.string.add_trigger_mode_and)) },
+                        )
                     }
-                    OutlinedButton(onClick = {
-                        val intent = Intent(android.media.RingtoneManager.ACTION_RINGTONE_PICKER).apply {
-                            putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_TYPE, android.media.RingtoneManager.TYPE_ALARM)
-                            putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_TITLE, "Select alarm tone")
-                            putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
-                            putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
-                            if (state.ringtoneUri.isNotBlank()) {
-                                putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, android.net.Uri.parse(state.ringtoneUri))
-                            }
-                        }
-                        ringtoneLauncher.launch(intent)
-                    }, modifier = Modifier.fillMaxWidth()) {
-                        Icon(Icons.Filled.Alarm, contentDescription = null)
-                        Spacer(Modifier.size(8.dp))
-                        Text(if (state.ringtoneUri.isNotBlank()) stringResource(R.string.add_ringtone_custom) else stringResource(R.string.add_ringtone_pick))
-                    }
-                    // Anti-sleep dismiss selector
                     Text(
-                        stringResource(R.string.add_alarm_anti_sleep),
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.padding(top = 12.dp),
-                    )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        listOf(
-                            0 to stringResource(R.string.add_alarm_anti_sleep_none),
-                            1 to stringResource(R.string.add_alarm_anti_sleep_math),
-                            2 to stringResource(R.string.add_alarm_anti_sleep_long_press),
-                        ).forEach { (type, label) ->
-                            androidx.compose.material3.FilterChip(
-                                selected = state.antiSleepDismiss == type,
-                                onClick = {
-                                    haptics.tap()
-                                    vm.onAntiSleepChange(type)
-                                },
-                                label = { Text(label, style = MaterialTheme.typography.labelSmall) },
-                            )
-                        }
-                    }
-                }
-            }
-
-            // --- Recurrence section (only shown when time is set) ---
-            if (state.dueAt != null) {
-                Text(stringResource(R.string.add_recurrence_label), style = MaterialTheme.typography.labelLarge)
-                val recurrenceOptions = remember {
-                    listOf(
-                        0 to "Once", 1 to "Daily", 2 to "Weekly",
-                        3 to "Weekdays", 4 to "Weekends", 5 to "Monthly",
-                    )
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    recurrenceOptions.take(3).forEach { (type, label) ->
-                        FilterChip(
-                            selected = state.recurrenceType == type,
-                            onClick = {
-                                haptics.tap()
-                                vm.onRecurrenceTypeChange(type)
-                            },
-                            label = { Text(label) },
-                        )
-                    }
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    recurrenceOptions.drop(3).forEach { (type, label) ->
-                        FilterChip(
-                            selected = state.recurrenceType == type,
-                            onClick = {
-                                haptics.tap()
-                                vm.onRecurrenceTypeChange(type)
-                            },
-                            label = { Text(label) },
-                        )
-                    }
-                }
-                if (state.recurrenceType == 7) {
-                    OutlinedTextField(
-                        value = state.recurrenceInterval.toString(),
-                        onValueChange = { v -> v.toIntOrNull()?.let { vm.onRecurrenceIntervalChange(it) } },
-                        label = { Text(stringResource(R.string.add_recurrence_interval)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                        stringResource(
+                            if (state.triggerMode == 0) R.string.add_trigger_mode_or_desc
+                            else R.string.add_trigger_mode_and_desc,
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
 
-            // --- Nag mode section ---
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.add_nag_toggle), style = MaterialTheme.typography.bodyMedium)
-                androidx.compose.material3.Switch(
-                    checked = state.nagMode,
-                    onCheckedChange = vm::onNagModeToggle,
-                )
-            }
-            if (state.nagMode) {
-                OutlinedTextField(
-                    value = state.nagIntervalMinutes.toString(),
-                    onValueChange = { v -> v.toIntOrNull()?.let { vm.onNagIntervalChange(it) } },
-                    label = { Text(stringResource(R.string.add_nag_interval)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            // --- Location trigger section ---
-            Text(stringResource(R.string.add_location_label), style = MaterialTheme.typography.labelLarge)
-
-            // Search any address
-            OutlinedTextField(
-                value = locationSearchQuery,
-                onValueChange = { locationSearchQuery = it },
-                label = { Text(stringResource(R.string.add_location_search)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            if (locationSearchResults.isNotEmpty()) {
-                locationSearchResults.forEach { result ->
-                    TextButton(
-                        onClick = {
-                            vm.onLocation(result.lat, result.lng, result.label)
-                            locationSearchQuery = ""
-                            locationSearchResults = emptyList()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.size(8.dp))
-                        Text(
-                            result.label,
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 2,
-                        )
-                    }
-                }
-            }
-
-            // Use current location button
-            OutlinedButton(onClick = {
-                val util = LocationUtil(context)
-                if (!util.isLocationEnabled()) {
-                    showLocationDisabledDialog = true
-                } else if (!PermissionUtil.hasFineLocation(context)) {
-                    locationLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
-                } else {
-                    scope.launch {
-                        val loc = withContext(Dispatchers.IO) { util.currentLocation() }
-                        if (loc != null) vm.onLocation(loc.latitude, loc.longitude, "Current location")
-                    }
-                }
-            }) {
-                Icon(Icons.Filled.MyLocation, contentDescription = null)
-                Spacer(Modifier.size(8.dp))
-                Text(stringResource(R.string.add_pick_current))
-            }
-            if (state.lat != 0.0 || state.lng != 0.0) {
-                Text(
-                    state.addressLabel.ifBlank { "%.4f, %.4f".format(state.lat, state.lng) },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            Text(stringResource(R.string.add_trigger_label), style = MaterialTheme.typography.labelLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = state.triggerType == 0,
-                    onClick = {
-                        haptics.tap()
-                        vm.onTriggerChange(0)
-                    },
-                    label = { Text(stringResource(R.string.add_trigger_arrive)) },
-                )
-                FilterChip(
-                    selected = state.triggerType == 1,
-                    onClick = {
-                        haptics.tap()
-                        vm.onTriggerChange(1)
-                    },
-                    label = { Text(stringResource(R.string.add_trigger_leave)) },
-                )
-            }
-
-            OutlinedTextField(
-                value = state.radiusMeters.toString(),
-                onValueChange = { v -> v.toIntOrNull()?.let { vm.onRadiusChange(it) } },
-                label = { Text(stringResource(R.string.add_radius_label)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            // --- Quick action section ---
-            Text(stringResource(R.string.add_quick_action), style = MaterialTheme.typography.labelLarge)
-            val quickActions = listOf(
-                0 to stringResource(R.string.quick_action_none),
-                1 to stringResource(R.string.quick_action_call),
-                2 to stringResource(R.string.quick_action_whatsapp),
-                6 to stringResource(R.string.quick_action_sms),
-                7 to stringResource(R.string.quick_action_whatsapp_group),
-                3 to stringResource(R.string.quick_action_open_app),
-                4 to stringResource(R.string.quick_action_navigate),
-                5 to stringResource(R.string.quick_action_url),
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                quickActions.take(4).forEach { (type, label) ->
-                    FilterChip(
-                        selected = state.quickActionType == type,
-                        onClick = {
-                            haptics.tap()
-                            vm.onQuickActionTypeChange(type)
-                        },
-                        label = { Text(label) },
-                    )
-                }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                quickActions.drop(4).forEach { (type, label) ->
-                    FilterChip(
-                        selected = state.quickActionType == type,
-                        onClick = {
-                            haptics.tap()
-                            vm.onQuickActionTypeChange(type)
-                        },
-                        label = { Text(label) },
-                    )
-                }
-            }
-            if (state.quickActionType != 0 && state.quickActionType != 4) {
-                OutlinedTextField(
-                    value = state.quickActionData,
-                    onValueChange = vm::onQuickActionDataChange,
-                    label = {
-                        Text(
-                            when (state.quickActionType) {
-                                1 -> stringResource(R.string.quick_action_call_hint)
-                                2 -> stringResource(R.string.quick_action_whatsapp_hint)
-                                6 -> stringResource(R.string.quick_action_sms_hint)
-                                7 -> stringResource(R.string.quick_action_whatsapp_group_hint)
-                                3 -> stringResource(R.string.quick_action_app_hint)
-                                5 -> stringResource(R.string.quick_action_url_hint)
-                                else -> ""
-                            },
-                        )
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                // Message field for WhatsApp and SMS
-                if (state.quickActionType == 2 || state.quickActionType == 6) {
-                    OutlinedTextField(
-                        value = state.quickActionMessage,
-                        onValueChange = vm::onQuickActionMessageChange,
-                        label = { Text(stringResource(R.string.quick_action_message_hint)) },
-                        modifier = Modifier.fillMaxWidth().height(80.dp),
-                    )
-                }
-            }
-
-            // --- Combined trigger mode (only when both time and location are set) ---
-            val hasLocation = state.lat != 0.0 || state.lng != 0.0
-            val hasTime = state.dueAt != null
-            if (hasLocation && hasTime) {
-                Text(stringResource(R.string.add_trigger_mode), style = MaterialTheme.typography.labelLarge)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = state.triggerMode == 0,
-                        onClick = {
-                            haptics.tap()
-                            vm.onTriggerModeChange(0)
-                        },
-                        label = { Text(stringResource(R.string.add_trigger_mode_or)) },
-                    )
-                    FilterChip(
-                        selected = state.triggerMode == 1,
-                        onClick = {
-                            haptics.tap()
-                            vm.onTriggerModeChange(1)
-                        },
-                        label = { Text(stringResource(R.string.add_trigger_mode_and)) },
-                    )
-                }
-                Text(
-                    stringResource(
-                        if (state.triggerMode == 0) R.string.add_trigger_mode_or_desc
-                        else R.string.add_trigger_mode_and_desc,
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
+            // ── Save / Cancel ──
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                 Button(
                     onClick = {
@@ -562,7 +612,7 @@ fun AddEditScreen(
             }
 
             Spacer(Modifier.height(24.dp))
-            com.aditya.ping.ui.components.BannerAd(modifier = Modifier.fillMaxWidth())
+            BannerAd(modifier = Modifier.fillMaxWidth())
         }
     }
 
@@ -585,6 +635,46 @@ fun AddEditScreen(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun SectionCard(
+    title: String,
+    icon: ImageVector,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                Spacer(Modifier.size(10.dp))
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            content()
+        }
     }
 }
 

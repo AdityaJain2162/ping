@@ -81,7 +81,6 @@ fun HomeScreen(
     onEdit: (Long) -> Unit,
     onSettings: () -> Unit,
     onSavedPlaces: () -> Unit,
-    onLists: () -> Unit,
     onCalendar: () -> Unit,
     onHistory: () -> Unit,
 ) {
