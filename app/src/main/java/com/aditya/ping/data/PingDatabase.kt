@@ -8,7 +8,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [ReminderEntity::class, SavedPlaceEntity::class, ReminderListEntity::class, AutomationEntity::class],
-    version = 14,
+    version = 15,
     exportSchema = false,
 )
 abstract class PingDatabase : RoomDatabase() {
@@ -50,9 +50,9 @@ abstract class PingDatabase : RoomDatabase() {
                 """INSERT INTO reminders (title, note, lat, lng, addressLabel, radiusMeters,
                 triggerType, dueAt, isAlarm, snoozeMinutes, recurrenceType, recurrenceInterval,
                 recurrenceEndDate, nagMode, nagIntervalMinutes, listId, triggerMode,
-                quickActionType, quickActionData, quickActionMessage, ringtoneUri,
+                automationId, ringtoneUri,
                 antiSleepDismiss, createdAt, enabled, completed, completedAt, lastFiredAt)
-                VALUES (?, ?, 0, 0, '', 150, 0, ?, 1, 10, 1, 1, NULL, 0, 15, NULL, 0, 0, '', '', '', 0, ?, 0, 0, NULL, 0)""",
+                VALUES (?, ?, 0, 0, '', 150, 0, ?, 1, 10, 1, 1, NULL, 0, 15, NULL, 0, NULL, '', 0, ?, 0, 0, NULL, 0)""",
                 arrayOf("Morning Alarm", "Time to wake up and start the day", morningAlarm, now),
             )
 
@@ -61,9 +61,9 @@ abstract class PingDatabase : RoomDatabase() {
                 """INSERT INTO reminders (title, note, lat, lng, addressLabel, radiusMeters,
                 triggerType, dueAt, isAlarm, snoozeMinutes, recurrenceType, recurrenceInterval,
                 recurrenceEndDate, nagMode, nagIntervalMinutes, listId, triggerMode,
-                quickActionType, quickActionData, quickActionMessage, ringtoneUri,
+                automationId, ringtoneUri,
                 antiSleepDismiss, createdAt, enabled, completed, completedAt, lastFiredAt)
-                VALUES (?, ?, 0, 0, '', 150, 0, ?, 0, 5, 3, 1, NULL, 0, 15, NULL, 0, 0, '', '', '', 0, ?, 0, 0, NULL, 0)""",
+                VALUES (?, ?, 0, 0, '', 150, 0, ?, 0, 5, 3, 1, NULL, 0, 15, NULL, 0, NULL, '', 0, ?, 0, 0, NULL, 0)""",
                 arrayOf("Leave for Work", "Don't forget your keys and badge", workReminder, now),
             )
 
@@ -72,9 +72,9 @@ abstract class PingDatabase : RoomDatabase() {
                 """INSERT INTO reminders (title, note, lat, lng, addressLabel, radiusMeters,
                 triggerType, dueAt, isAlarm, snoozeMinutes, recurrenceType, recurrenceInterval,
                 recurrenceEndDate, nagMode, nagIntervalMinutes, listId, triggerMode,
-                quickActionType, quickActionData, quickActionMessage, ringtoneUri,
+                automationId, ringtoneUri,
                 antiSleepDismiss, createdAt, enabled, completed, completedAt, lastFiredAt)
-                VALUES (?, ?, 0, 0, '', 150, 0, ?, 0, 5, 1, 1, NULL, 0, 15, NULL, 0, 0, '', '', '', 0, ?, 0, 0, NULL, 0)""",
+                VALUES (?, ?, 0, 0, '', 150, 0, ?, 0, 5, 1, 1, NULL, 0, 15, NULL, 0, NULL, '', 0, ?, 0, 0, NULL, 0)""",
                 arrayOf("Wind Down", "Put the phone away and get ready for bed", eveningReminder, now),
             )
 
@@ -83,9 +83,9 @@ abstract class PingDatabase : RoomDatabase() {
                 """INSERT INTO reminders (title, note, lat, lng, addressLabel, radiusMeters,
                 triggerType, dueAt, isAlarm, snoozeMinutes, recurrenceType, recurrenceInterval,
                 recurrenceEndDate, nagMode, nagIntervalMinutes, listId, triggerMode,
-                quickActionType, quickActionData, quickActionMessage, ringtoneUri,
+                automationId, ringtoneUri,
                 antiSleepDismiss, createdAt, enabled, completed, completedAt, lastFiredAt)
-                VALUES (?, ?, 0, 0, ?, 200, 0, NULL, 0, 5, 0, 1, NULL, 0, 15, NULL, 0, 0, '', '', '', 0, ?, 0, 0, NULL, 0)""",
+                VALUES (?, ?, 0, 0, ?, 200, 0, NULL, 0, 5, 0, 1, NULL, 0, 15, NULL, 0, NULL, '', 0, ?, 0, 0, NULL, 0)""",
                 arrayOf("Buy groceries", "Milk, eggs, bread — tap to set your store location", "Tap to set location", now),
             )
         }

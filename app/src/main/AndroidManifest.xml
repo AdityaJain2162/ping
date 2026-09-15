@@ -135,6 +135,10 @@
             android:exported="false" />
 
         <receiver
+            android:name=".service.AutomationActionReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".service.WifiTriggerReceiver"
             android:exported="false">
             <intent-filter>

@@ -185,4 +185,20 @@ object AutomationExecutor {
         }.start()
         return true
     }
+
+    fun actionLabel(type: Int): String = when (type) {
+        0 -> "Notify"
+        1 -> "Call"
+        2 -> "WhatsApp"
+        3 -> "SMS"
+        4 -> "Open app"
+        5 -> "Navigate"
+        6 -> "Open URL"
+        7 -> "Toggle Wi-Fi"
+        8 -> "Toggle Bluetooth"
+        9 -> "Silent mode"
+        10 -> "Set volume"
+        11 -> "Webhook"
+        else -> "Run"
+    }
 }

@@ -232,7 +232,10 @@
     <string name="add_section_details">Details</string>
     <string name="add_section_time">Time</string>
     <string name="add_section_location">Location</string>
-    <string name="add_section_actions">Quick action</string>
+    <string name="add_section_actions">Automation</string>
+    <string name="add_automation_none">None</string>
+    <string name="add_automation_pick">Select automation</string>
+    <string name="add_automation_empty">No automations yet — create one in the Automations tab</string>
     <string name="add_section_advanced">Advanced</string>
     <string name="widget_no_reminders">No reminders today</string>
     <string name="widget_no_reminders_desc">Enjoy your day — tap to add one</string>

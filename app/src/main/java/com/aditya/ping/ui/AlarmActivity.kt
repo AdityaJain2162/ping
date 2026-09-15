@@ -70,7 +70,6 @@ import com.aditya.ping.R
 import com.aditya.ping.data.PingDatabase
 import com.aditya.ping.util.AlarmScheduler
 import com.aditya.ping.util.NagScheduler
-import com.aditya.ping.util.QuickActionExecutor
 import com.aditya.ping.util.RecurrenceCalculator
 import com.aditya.ping.util.SmartSnooze
 import kotlinx.coroutines.CoroutineScope
@@ -121,10 +120,13 @@ class AlarmActivity : ComponentActivity() {
         } else null
 
         val customRingtoneUri = reminder?.ringtoneUri?.takeIf { it.isNotBlank() }
-        val quickActionType = reminder?.quickActionType ?: 0
-        val quickActionData = reminder?.quickActionData ?: ""
-        val quickActionLabel = QuickActionExecutor.actionLabel(quickActionType)
-        val hasQuickAction = quickActionType != 0 && quickActionData.isNotBlank()
+        val automationId = reminder?.automationId
+        val automation = if (automationId != null) {
+            try { kotlinx.coroutines.runBlocking { com.aditya.ping.data.AutomationRepository.from(this@AlarmActivity).getById(automationId) } }
+            catch (e: Exception) { null }
+        } else null
+        val hasAutomation = automation != null && automation.enabled
+        val automationLabel = if (hasAutomation) com.aditya.ping.util.AutomationExecutor.actionLabel(automation!!.actionType) else null
         val antiSleepDismiss = reminder?.antiSleepDismiss ?: 0
 
         startSound(customRingtoneUri)
@@ -136,10 +138,10 @@ class AlarmActivity : ComponentActivity() {
                 title = title,
                 note = note,
                 antiSleepDismiss = antiSleepDismiss,
-                quickActionLabel = if (hasQuickAction) quickActionLabel else null,
-                quickActionIcon = quickActionIcon(quickActionType),
-                onQuickAction = if (hasQuickAction) {
-                    { reminder?.let { QuickActionExecutor.execute(this, it) } }
+                quickActionLabel = automationLabel,
+                quickActionIcon = if (hasAutomation) quickActionIcon(automation!!.actionType) else null,
+                onQuickAction = if (hasAutomation) {
+                    { automation?.let { com.aditya.ping.util.AutomationExecutor.execute(this, it) } }
                 } else null,
                 onDismiss = {
                     dismissAlarm(reminderId)

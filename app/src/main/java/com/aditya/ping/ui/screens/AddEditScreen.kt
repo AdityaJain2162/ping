@@ -553,72 +553,65 @@ fun AddEditScreen(
                 }
             }
 
-            // ── Quick action section ──
+            // ── Automation section ──
             SectionCard(
                 title = stringResource(R.string.add_section_actions),
                 icon = Icons.Filled.Bolt,
             ) {
-                val quickActions = listOf(
-                    0 to stringResource(R.string.quick_action_none),
-                    1 to stringResource(R.string.quick_action_call),
-                    2 to stringResource(R.string.quick_action_whatsapp),
-                    6 to stringResource(R.string.quick_action_sms),
-                    7 to stringResource(R.string.quick_action_whatsapp_group),
-                    3 to stringResource(R.string.quick_action_open_app),
-                    4 to stringResource(R.string.quick_action_navigate),
-                    5 to stringResource(R.string.quick_action_url),
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    quickActions.take(4).forEach { (type, label) ->
-                        FilterChip(
-                            selected = state.quickActionType == type,
+                val automationRepo = remember { com.aditya.ping.data.AutomationRepository.from(context) }
+                val automations by automationRepo.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+                var automationExpanded by remember { mutableStateOf(false) }
+
+                if (automations.isEmpty()) {
+                    Text(
+                        stringResource(R.string.add_automation_empty),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    val selected = automations.find { it.id == state.automationId }
+                    Box {
+                        OutlinedButton(
                             onClick = {
                                 haptics.tap()
-                                vm.onQuickActionTypeChange(type)
+                                automationExpanded = true
                             },
-                            label = { Text(label) },
-                        )
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    quickActions.drop(4).forEach { (type, label) ->
-                        FilterChip(
-                            selected = state.quickActionType == type,
-                            onClick = {
-                                haptics.tap()
-                                vm.onQuickActionTypeChange(type)
-                            },
-                            label = { Text(label) },
-                        )
-                    }
-                }
-                if (state.quickActionType != 0 && state.quickActionType != 4) {
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = state.quickActionData,
-                        onValueChange = vm::onQuickActionDataChange,
-                        label = {
-                            Text(
-                                when (state.quickActionType) {
-                                    1 -> stringResource(R.string.quick_action_call_hint)
-                                    2 -> stringResource(R.string.quick_action_whatsapp_hint)
-                                    6 -> stringResource(R.string.quick_action_sms_hint)
-                                    7 -> stringResource(R.string.quick_action_whatsapp_group_hint)
-                                    3 -> stringResource(R.string.quick_action_app_hint)
-                                    5 -> stringResource(R.string.quick_action_url_hint)
-                                    else -> ""
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(Icons.Filled.Bolt, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.size(8.dp))
+                            Text(selected?.name ?: stringResource(R.string.add_automation_none))
+                        }
+                        androidx.compose.material3.DropdownMenu(
+                            expanded = automationExpanded,
+                            onDismissRequest = { automationExpanded = false },
+                        ) {
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text(stringResource(R.string.add_automation_none)) },
+                                onClick = {
+                                    haptics.tap()
+                                    vm.onAutomationChange(null)
+                                    automationExpanded = false
                                 },
                             )
-                        },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    if (state.quickActionType == 2 || state.quickActionType == 6) {
-                        OutlinedTextField(
-                            value = state.quickActionMessage,
-                            onValueChange = vm::onQuickActionMessageChange,
-                            label = { Text(stringResource(R.string.quick_action_message_hint)) },
-                            modifier = Modifier.fillMaxWidth().height(80.dp),
+                            automations.forEach { automation ->
+                                androidx.compose.material3.DropdownMenuItem(
+                                    text = { Text(automation.name) },
+                                    onClick = {
+                                        haptics.tap()
+                                        vm.onAutomationChange(automation.id)
+                                        automationExpanded = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+                    if (selected != null) {
+                        Text(
+                            "Runs: ${com.aditya.ping.util.AutomationExecutor.actionLabel(selected.actionType)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp),
                         )
                     }
                 }

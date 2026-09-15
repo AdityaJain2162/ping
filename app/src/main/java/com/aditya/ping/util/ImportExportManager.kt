@@ -48,9 +48,7 @@ class ImportExportManager(private val context: Context) {
                 put("nagMode", r.nagMode)
                 put("nagIntervalMinutes", r.nagIntervalMinutes)
                 put("listId", r.listId ?: JSONObject.NULL)
-                put("quickActionType", r.quickActionType)
-                put("quickActionData", r.quickActionData)
-                put("quickActionMessage", r.quickActionMessage)
+                put("automationId", r.automationId ?: JSONObject.NULL)
                 put("ringtoneUri", r.ringtoneUri)
                 put("lastFiredAt", r.lastFiredAt)
             })
@@ -151,9 +149,7 @@ class ImportExportManager(private val context: Context) {
                 nagMode = obj.optBoolean("nagMode", false),
                 nagIntervalMinutes = obj.optInt("nagIntervalMinutes", 15),
                 listId = newListId,
-                quickActionType = obj.optInt("quickActionType", 0),
-                quickActionData = obj.optString("quickActionData", ""),
-                quickActionMessage = obj.optString("quickActionMessage", ""),
+                automationId = if (obj.isNull("automationId")) null else obj.optLong("automationId", 0L).takeIf { it > 0 },
                 ringtoneUri = obj.optString("ringtoneUri", ""),
                 lastFiredAt = obj.optLong("lastFiredAt", 0L),
             )
