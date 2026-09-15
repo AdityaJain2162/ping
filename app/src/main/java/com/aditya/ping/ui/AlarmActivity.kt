@@ -20,6 +20,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,12 +45,15 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +61,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -70,6 +75,7 @@ import com.aditya.ping.util.RecurrenceCalculator
 import com.aditya.ping.util.SmartSnooze
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -119,6 +125,7 @@ class AlarmActivity : ComponentActivity() {
         val quickActionData = reminder?.quickActionData ?: ""
         val quickActionLabel = QuickActionExecutor.actionLabel(quickActionType)
         val hasQuickAction = quickActionType != 0 && quickActionData.isNotBlank()
+        val antiSleepDismiss = reminder?.antiSleepDismiss ?: 0
 
         startSound(customRingtoneUri)
         startVibration()
@@ -128,6 +135,7 @@ class AlarmActivity : ComponentActivity() {
             AlarmScreen(
                 title = title,
                 note = note,
+                antiSleepDismiss = antiSleepDismiss,
                 quickActionLabel = if (hasQuickAction) quickActionLabel else null,
                 quickActionIcon = quickActionIcon(quickActionType),
                 onQuickAction = if (hasQuickAction) {
@@ -275,11 +283,14 @@ private fun AlarmScreen(
     onDismiss: () -> Unit,
     onSnooze: () -> Unit,
     onSnoozeTo: (Long) -> Unit,
+    antiSleepDismiss: Int = 0,
     quickActionLabel: String? = null,
     quickActionIcon: ImageVector? = null,
     onQuickAction: (() -> Unit)? = null,
 ) {
     var showSnoozeOptions by remember { mutableStateOf(false) }
+    var showMathChallenge by remember { mutableStateOf(false) }
+    var showLongPress by remember { mutableStateOf(false) }
     val snoozeOptions = remember { SmartSnooze.options() }
     val currentTime = remember { SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date()) }
 
@@ -294,6 +305,15 @@ private fun AlarmScreen(
         ),
         label = "pulseScale",
     )
+
+    // The actual dismiss handler — wraps anti-sleep challenge
+    val handleDismiss: () -> Unit = {
+        when (antiSleepDismiss) {
+            1 -> showMathChallenge = true
+            2 -> showLongPress = true
+            else -> onDismiss()
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -384,7 +404,7 @@ private fun AlarmScreen(
 
                 // Dismiss button
                 Button(
-                    onClick = onDismiss,
+                    onClick = handleDismiss,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -439,5 +459,166 @@ private fun AlarmScreen(
                 },
             )
         }
+
+        // Math challenge dialog
+        if (showMathChallenge) {
+            MathChallengeDialog(
+                onSolved = {
+                    showMathChallenge = false
+                    onDismiss()
+                },
+                onDismiss = { showMathChallenge = false },
+            )
+        }
+
+        // Long-press dialog
+        if (showLongPress) {
+            LongPressDialog(
+                onDismissed = {
+                    showLongPress = false
+                    onDismiss()
+                },
+                onCancel = { showLongPress = false },
+            )
+        }
     }
+}
+
+@Composable
+private fun MathChallengeDialog(
+    onSolved: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val a = remember { (10..50).random() }
+    val b = remember { (10..50).random() }
+    val answer = a + b
+    var userInput by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.alarm_anti_sleep_math)) },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "$a + $b = ?",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(vertical = 16.dp),
+                )
+                OutlinedTextField(
+                    value = userInput,
+                    onValueChange = {
+                        userInput = it.filter { c -> c.isDigit() }
+                        showError = false
+                    },
+                    singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number,
+                    ),
+                    isError = showError,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (showError) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.alarm_anti_sleep_wrong),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (userInput.toIntOrNull() == answer) {
+                        onSolved()
+                    } else {
+                        showError = true
+                    }
+                },
+            ) { Text(stringResource(R.string.alarm_dismiss)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.alarm_snooze))
+            }
+        },
+    )
+}
+
+@Composable
+private fun LongPressDialog(
+    onDismissed: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    var progress by remember { mutableStateOf(0f) }
+    var holding by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text(stringResource(R.string.alarm_anti_sleep_long_press)) },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    stringResource(R.string.alarm_anti_sleep_hold),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 16.dp),
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .clip(MaterialTheme.shapes.large)
+                        .background(MaterialTheme.colorScheme.error)
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onPress = {
+                                    holding = true
+                                    val startTime = System.currentTimeMillis()
+                                    scope.launch {
+                                        while (holding && progress < 1f) {
+                                            progress = ((System.currentTimeMillis() - startTime) / 3000f)
+                                                .coerceIn(0f, 1f)
+                                            delay(50)
+                                        }
+                                        if (progress >= 1f) {
+                                            onDismissed()
+                                        }
+                                    }
+                                    tryAwaitRelease()
+                                    holding = false
+                                    if (progress < 1f) progress = 0f
+                                },
+                            )
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        stringResource(R.string.alarm_dismiss),
+                        color = MaterialTheme.colorScheme.onError,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onCancel) {
+                Text(stringResource(R.string.alarm_snooze))
+            }
+        },
+    )
 }

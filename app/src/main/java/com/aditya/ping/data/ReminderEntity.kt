@@ -43,6 +43,8 @@ data class ReminderEntity(
     val quickActionMessage: String = "",
     /** custom ringtone URI for alarms, empty = default */
     val ringtoneUri: String = "",
+    /** anti-sleep dismiss mode: 0=none, 1=math challenge, 2=long-press 3s */
+    val antiSleepDismiss: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
     val enabled: Boolean = true,
     /** whether the user has marked this reminder as done (separate from enabled) */

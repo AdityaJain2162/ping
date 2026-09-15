@@ -197,6 +197,14 @@
     <string name="alarm_snooze">Snooze</string>
     <string name="alarm_snooze_for">Snooze for…</string>
     <string name="alarm_cancel">Cancel</string>
+    <string name="alarm_anti_sleep_math">Solve to dismiss</string>
+    <string name="alarm_anti_sleep_long_press">Hold to dismiss</string>
+    <string name="alarm_anti_sleep_hold">Hold the button…</string>
+    <string name="alarm_anti_sleep_wrong">Wrong answer, try again</string>
+    <string name="add_alarm_anti_sleep">Anti-sleep dismiss</string>
+    <string name="add_alarm_anti_sleep_none">None</string>
+    <string name="add_alarm_anti_sleep_math">Math challenge</string>
+    <string name="add_alarm_anti_sleep_long_press">Long-press 3s</string>
     <string name="calendar_prev_month">Previous month</string>
     <string name="calendar_next_month">Next month</string>
 </resources>

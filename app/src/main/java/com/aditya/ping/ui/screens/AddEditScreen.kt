@@ -205,6 +205,28 @@ fun AddEditScreen(
                         Spacer(Modifier.size(8.dp))
                         Text(if (state.ringtoneUri.isNotBlank()) stringResource(R.string.add_ringtone_custom) else stringResource(R.string.add_ringtone_pick))
                     }
+                    // Anti-sleep dismiss selector
+                    Text(
+                        stringResource(R.string.add_alarm_anti_sleep),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(top = 12.dp),
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        listOf(
+                            0 to stringResource(R.string.add_alarm_anti_sleep_none),
+                            1 to stringResource(R.string.add_alarm_anti_sleep_math),
+                            2 to stringResource(R.string.add_alarm_anti_sleep_long_press),
+                        ).forEach { (type, label) ->
+                            androidx.compose.material3.FilterChip(
+                                selected = state.antiSleepDismiss == type,
+                                onClick = { vm.onAntiSleepChange(type) },
+                                label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                            )
+                        }
+                    }
                 }
             }
 

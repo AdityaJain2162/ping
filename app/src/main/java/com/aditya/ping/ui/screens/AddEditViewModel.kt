@@ -49,6 +49,8 @@ data class AddEditState(
     val quickActionMessage: String = "",
     /** custom ringtone URI for alarms, empty = default */
     val ringtoneUri: String = "",
+    /** anti-sleep dismiss mode: 0=none, 1=math challenge, 2=long-press 3s */
+    val antiSleepDismiss: Int = 0,
     val isEdit: Boolean = false,
     val saving: Boolean = false,
     val saved: Boolean = false,
@@ -79,6 +81,7 @@ class AddEditViewModel(
                     quickActionData = r.quickActionData,
                     quickActionMessage = r.quickActionMessage,
                     ringtoneUri = r.ringtoneUri,
+                    antiSleepDismiss = r.antiSleepDismiss,
                     isEdit = true,
                 )
             }
@@ -104,6 +107,7 @@ class AddEditViewModel(
     fun onQuickActionDataChange(v: String) = _state.update { it.copy(quickActionData = v) }
     fun onQuickActionMessageChange(v: String) = _state.update { it.copy(quickActionMessage = v) }
     fun onRingtoneUriChange(v: String) = _state.update { it.copy(ringtoneUri = v) }
+    fun onAntiSleepChange(v: Int) = _state.update { it.copy(antiSleepDismiss = v) }
 
     fun save() = viewModelScope.launch {
         val s = _state.value
@@ -136,6 +140,7 @@ class AddEditViewModel(
             quickActionData = s.quickActionData.trim(),
             quickActionMessage = s.quickActionMessage.trim(),
             ringtoneUri = s.ringtoneUri,
+            antiSleepDismiss = s.antiSleepDismiss,
         )
         val id = if (s.isEdit) {
             repo.update(entity)
