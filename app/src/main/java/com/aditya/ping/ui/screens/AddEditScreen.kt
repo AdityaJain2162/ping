@@ -206,30 +206,80 @@ fun AddEditScreen(
                 title = stringResource(R.string.add_section_time),
                 icon = Icons.Filled.Schedule,
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (state.dueAt != null) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(
+                        onClick = {
+                            haptics.tap()
+                            showDatePicker(context, state.dueAt) { picked ->
+                                // Preserve existing time if already set, otherwise default to now
+                                val cal = Calendar.getInstance()
+                                if (state.dueAt != null) {
+                                    val existing = Calendar.getInstance().apply { timeInMillis = state.dueAt!! }
+                                    cal.set(Calendar.HOUR_OF_DAY, existing.get(Calendar.HOUR_OF_DAY))
+                                    cal.set(Calendar.MINUTE, existing.get(Calendar.MINUTE))
+                                }
+                                val pickedCal = Calendar.getInstance().apply { timeInMillis = picked }
+                                cal.set(pickedCal.get(Calendar.YEAR), pickedCal.get(Calendar.MONTH), pickedCal.get(Calendar.DAY_OF_MONTH))
+                                cal.set(Calendar.SECOND, 0)
+                                cal.set(Calendar.MILLISECOND, 0)
+                                vm.onDueAtChange(cal.timeInMillis)
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Filled.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.size(8.dp))
+                        Text(
+                            if (state.dueAt != null) UiFormats.formatDateOnly(state.dueAt!!)
+                            else stringResource(R.string.add_time_pick_date),
+                        )
+                    }
+                    Spacer(Modifier.size(8.dp))
+                    OutlinedButton(
+                        onClick = {
+                            haptics.tap()
+                            showTimePicker(context, state.dueAt) { picked ->
+                                // Preserve existing date if already set, otherwise default to today
+                                val cal = Calendar.getInstance()
+                                if (state.dueAt != null) {
+                                    val existing = Calendar.getInstance().apply { timeInMillis = state.dueAt!! }
+                                    cal.set(existing.get(Calendar.YEAR), existing.get(Calendar.MONTH), existing.get(Calendar.DAY_OF_MONTH))
+                                }
+                                val pickedCal = Calendar.getInstance().apply { timeInMillis = picked }
+                                cal.set(Calendar.HOUR_OF_DAY, pickedCal.get(Calendar.HOUR_OF_DAY))
+                                cal.set(Calendar.MINUTE, pickedCal.get(Calendar.MINUTE))
+                                cal.set(Calendar.SECOND, 0)
+                                cal.set(Calendar.MILLISECOND, 0)
+                                vm.onDueAtChange(cal.timeInMillis)
+                            }
+                        },
+                        enabled = state.dueAt != null,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Filled.Alarm, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.size(8.dp))
+                        Text(
+                            if (state.dueAt != null) UiFormats.formatTimeOnly(state.dueAt!!)
+                            else stringResource(R.string.add_time_pick_time),
+                        )
+                    }
+                }
+                if (state.dueAt != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
                         Text(
                             UiFormats.formatReminderDate(state.dueAt!!),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         TextButton(onClick = {
                             haptics.tap()
                             vm.onDueAtChange(null)
                         }) {
                             Text(stringResource(R.string.add_time_clear))
-                        }
-                    } else {
-                        OutlinedButton(
-                            onClick = {
-                                haptics.tap()
-                                showDateTimePicker(context, vm::onDueAtChange)
-                            },
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Icon(Icons.Filled.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.size(8.dp))
-                            Text(stringResource(R.string.add_time_pick))
                         }
                     }
                 }
@@ -678,19 +728,29 @@ private fun SectionCard(
     }
 }
 
-private fun showDateTimePicker(
+private fun showDatePicker(
     context: android.content.Context,
+    current: Long?,
     onPicked: (Long) -> Unit,
 ) {
-    val cal = Calendar.getInstance()
+    val cal = if (current != null) Calendar.getInstance().apply { timeInMillis = current } else Calendar.getInstance()
     DatePickerDialog(context, { _, year, month, day ->
-        cal.set(year, month, day)
-        TimePickerDialog(context, { _, hour, minute ->
-            cal.set(Calendar.HOUR_OF_DAY, hour)
-            cal.set(Calendar.MINUTE, minute)
-            cal.set(Calendar.SECOND, 0)
-            cal.set(Calendar.MILLISECOND, 0)
-            onPicked(cal.timeInMillis)
-        }, cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), false).show()
+        cal.set(Calendar.YEAR, year)
+        cal.set(Calendar.MONTH, month)
+        cal.set(Calendar.DAY_OF_MONTH, day)
+        onPicked(cal.timeInMillis)
     }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
+}
+
+private fun showTimePicker(
+    context: android.content.Context,
+    current: Long?,
+    onPicked: (Long) -> Unit,
+) {
+    val cal = if (current != null) Calendar.getInstance().apply { timeInMillis = current } else Calendar.getInstance()
+    TimePickerDialog(context, { _, hour, minute ->
+        cal.set(Calendar.HOUR_OF_DAY, hour)
+        cal.set(Calendar.MINUTE, minute)
+        onPicked(cal.timeInMillis)
+    }, cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), false).show()
 }
