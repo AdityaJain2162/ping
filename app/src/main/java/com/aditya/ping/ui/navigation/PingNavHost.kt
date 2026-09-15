@@ -64,6 +64,7 @@ fun PingNavHost() {
     val currentRoute = backStack?.destination?.route
     val isOnTab = currentRoute == Routes.HOME
     val scope = rememberCoroutineScope()
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
 
     val tabRoutes = listOf(Routes.HOME, Routes.SAVED_PLACES, Routes.CALENDAR, Routes.AUTOMATIONS)
     val pagerState = rememberPagerState(pageCount = { tabRoutes.size })
@@ -107,7 +108,10 @@ fun PingNavHost() {
                         )
                         NavigationBarItem(
                             selected = selected,
-                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                            onClick = {
+                                haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                scope.launch { pagerState.animateScrollToPage(index) }
+                            },
                             modifier = Modifier.testTag("tab_${tabRoutes[index]}"),
                             icon = {
                                 Icon(
