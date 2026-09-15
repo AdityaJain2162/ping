@@ -192,12 +192,36 @@ private fun AddAutomationDialog(
     onSave: (AutomationEntity) -> Unit,
 ) {
     val haptics = LocalHaptics.current
+    val context = LocalContext.current
     var name by remember { mutableStateOf("") }
     var triggerType by remember { mutableIntStateOf(2) } // default: wifi connect
     var triggerData by remember { mutableStateOf("") }
     var actionType by remember { mutableIntStateOf(0) } // default: notification
     var actionData by remember { mutableStateOf("") }
     var actionMessage by remember { mutableStateOf("") }
+    var permDenied by remember { mutableStateOf(false) }
+
+    // Permission launcher for CALL_PHONE / SEND_SMS
+    val permLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
+    ) { results ->
+        val anyGranted = results.values.any { it }
+        permDenied = !anyGranted
+        if (anyGranted) haptics.confirm() else haptics.reject()
+    }
+
+    fun requestActionPermission(type: Int) {
+        val perms = when (type) {
+            1 -> arrayOf(android.Manifest.permission.CALL_PHONE)
+            3 -> arrayOf(android.Manifest.permission.SEND_SMS)
+            else -> return
+        }
+        val needed = perms.any {
+            androidx.core.content.ContextCompat.checkSelfPermission(context, it) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+        if (needed) permLauncher.launch(perms) else permDenied = false
+    }
 
     val triggers = listOf(
         0 to stringResource(R.string.trigger_location_arrive),
@@ -324,9 +348,34 @@ private fun AddAutomationDialog(
                                 onClick = {
                                     haptics.tap()
                                     actionType = type
+                                    if (type == 1 || type == 3) requestActionPermission(type)
                                 },
                                 label = { Text(label, style = MaterialTheme.typography.labelSmall) },
                             )
+                        }
+                    }
+                    if (permDenied && (actionType == 1 || actionType == 3)) {
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f))
+                                .padding(12.dp),
+                        ) {
+                            Text(
+                                stringResource(R.string.automation_perm_denied),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(onClick = {
+                                haptics.tap()
+                                requestActionPermission(actionType)
+                            }) {
+                                Text(stringResource(R.string.automation_perm_grant))
+                            }
                         }
                     }
                     if (actionType !in listOf(0, 7, 8, 9)) {
