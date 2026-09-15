@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Nfc
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.Webhook
 import androidx.compose.material.icons.filled.LocationOn
@@ -459,8 +460,36 @@ private fun AddAutomationDialog(
                 // Action buttons (always visible, not scrolled)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
+                    // Test button — runs the automation action immediately
+                    TextButton(
+                        onClick = {
+                            haptics.heavy()
+                            val testAutomation = AutomationEntity(
+                                id = automation?.id ?: 0,
+                                name = name.trim().ifBlank { "Test" },
+                                triggerType = triggerType,
+                                triggerData = triggerData.trim(),
+                                actionType = actionType,
+                                actionData = actionData.trim(),
+                                actionMessage = actionMessage.trim(),
+                                enabled = true,
+                                createdAt = System.currentTimeMillis(),
+                            )
+                            com.aditya.ping.util.AutomationExecutor.execute(context, testAutomation)
+                        },
+                        enabled = canSave,
+                    ) {
+                        Icon(
+                            Icons.Filled.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.automation_test))
+                    }
+                    Row {
                     TextButton(onClick = {
                         haptics.tap()
                         onDismiss()
@@ -489,6 +518,7 @@ private fun AddAutomationDialog(
                         },
                         enabled = canSave,
                     ) { Text(stringResource(R.string.add_save)) }
+                    } // end inner Row
                 }
             }
         }
