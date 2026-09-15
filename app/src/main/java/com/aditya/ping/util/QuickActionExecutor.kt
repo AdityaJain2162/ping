@@ -50,8 +50,12 @@ object QuickActionExecutor {
             4 -> Intent(Intent.ACTION_VIEW, Uri.parse(
                 "geo:${reminder.lat},${reminder.lng}?q=${reminder.lat},${reminder.lng}(${reminder.title})"
             ))
-            // Open URL
-            5 -> Intent(Intent.ACTION_VIEW, Uri.parse(data))
+            // Open URL — normalize to https:// if no scheme present
+            5 -> {
+                val url = if (data.startsWith("http://") || data.startsWith("https://")) data
+                else "https://$data"
+                Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            }
             // SMS (with optional pre-filled message)
             6 -> {
                 val uri = if (message.isNotBlank()) {

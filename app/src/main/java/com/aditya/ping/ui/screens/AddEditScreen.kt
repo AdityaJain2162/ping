@@ -206,17 +206,66 @@ fun AddEditScreen(
                 title = stringResource(R.string.add_section_time),
                 icon = Icons.Filled.Schedule,
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(
+                // Quick date options: Today, Tomorrow, Pick custom date
+                Text(stringResource(R.string.add_time_label), style = MaterialTheme.typography.labelMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    val todayCal = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, 9)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    val tomorrowCal = Calendar.getInstance().apply {
+                        add(Calendar.DAY_OF_YEAR, 1)
+                        set(Calendar.HOUR_OF_DAY, 9)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    FilterChip(
+                        selected = state.dueAt != null && isSameDay(state.dueAt!!, todayCal.timeInMillis),
+                        onClick = {
+                            haptics.tap()
+                            // Preserve existing time if set, otherwise default to 9 AM
+                            val cal = todayCal.clone() as Calendar
+                            if (state.dueAt != null) {
+                                val existing = Calendar.getInstance().apply { timeInMillis = state.dueAt!! }
+                                cal.set(Calendar.HOUR_OF_DAY, existing.get(Calendar.HOUR_OF_DAY))
+                                cal.set(Calendar.MINUTE, existing.get(Calendar.MINUTE))
+                            }
+                            vm.onDueAtChange(cal.timeInMillis)
+                        },
+                        label = { Text(stringResource(R.string.add_time_today)) },
+                    )
+                    FilterChip(
+                        selected = state.dueAt != null && isSameDay(state.dueAt!!, tomorrowCal.timeInMillis),
+                        onClick = {
+                            haptics.tap()
+                            val cal = tomorrowCal.clone() as Calendar
+                            if (state.dueAt != null) {
+                                val existing = Calendar.getInstance().apply { timeInMillis = state.dueAt!! }
+                                cal.set(Calendar.HOUR_OF_DAY, existing.get(Calendar.HOUR_OF_DAY))
+                                cal.set(Calendar.MINUTE, existing.get(Calendar.MINUTE))
+                            }
+                            vm.onDueAtChange(cal.timeInMillis)
+                        },
+                        label = { Text(stringResource(R.string.add_time_tomorrow)) },
+                    )
+                    FilterChip(
+                        selected = state.dueAt != null &&
+                            !isSameDay(state.dueAt!!, todayCal.timeInMillis) &&
+                            !isSameDay(state.dueAt!!, tomorrowCal.timeInMillis),
                         onClick = {
                             haptics.tap()
                             showDatePicker(context, state.dueAt) { picked ->
-                                // Preserve existing time if already set, otherwise default to now
                                 val cal = Calendar.getInstance()
                                 if (state.dueAt != null) {
                                     val existing = Calendar.getInstance().apply { timeInMillis = state.dueAt!! }
                                     cal.set(Calendar.HOUR_OF_DAY, existing.get(Calendar.HOUR_OF_DAY))
                                     cal.set(Calendar.MINUTE, existing.get(Calendar.MINUTE))
+                                } else {
+                                    cal.set(Calendar.HOUR_OF_DAY, 9)
+                                    cal.set(Calendar.MINUTE, 0)
                                 }
                                 val pickedCal = Calendar.getInstance().apply { timeInMillis = picked }
                                 cal.set(pickedCal.get(Calendar.YEAR), pickedCal.get(Calendar.MONTH), pickedCal.get(Calendar.DAY_OF_MONTH))
@@ -225,44 +274,40 @@ fun AddEditScreen(
                                 vm.onDueAtChange(cal.timeInMillis)
                             }
                         },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Icon(Icons.Filled.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.size(8.dp))
-                        Text(
-                            if (state.dueAt != null) UiFormats.formatDateOnly(state.dueAt!!)
-                            else stringResource(R.string.add_time_pick_date),
-                        )
-                    }
-                    Spacer(Modifier.size(8.dp))
-                    OutlinedButton(
-                        onClick = {
-                            haptics.tap()
-                            showTimePicker(context, state.dueAt) { picked ->
-                                // Preserve existing date if already set, otherwise default to today
-                                val cal = Calendar.getInstance()
-                                if (state.dueAt != null) {
-                                    val existing = Calendar.getInstance().apply { timeInMillis = state.dueAt!! }
-                                    cal.set(existing.get(Calendar.YEAR), existing.get(Calendar.MONTH), existing.get(Calendar.DAY_OF_MONTH))
+                        label = { Text(stringResource(R.string.add_time_pick_date)) },
+                    )
+                }
+
+                // Time picker — independent, always enabled (defaults to today if no date)
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = {
+                        haptics.tap()
+                        showTimePicker(context, state.dueAt) { picked ->
+                            val cal = if (state.dueAt != null) {
+                                Calendar.getInstance().apply { timeInMillis = state.dueAt!! }
+                            } else {
+                                Calendar.getInstance().apply {
+                                    set(Calendar.SECOND, 0)
+                                    set(Calendar.MILLISECOND, 0)
                                 }
-                                val pickedCal = Calendar.getInstance().apply { timeInMillis = picked }
-                                cal.set(Calendar.HOUR_OF_DAY, pickedCal.get(Calendar.HOUR_OF_DAY))
-                                cal.set(Calendar.MINUTE, pickedCal.get(Calendar.MINUTE))
-                                cal.set(Calendar.SECOND, 0)
-                                cal.set(Calendar.MILLISECOND, 0)
-                                vm.onDueAtChange(cal.timeInMillis)
                             }
-                        },
-                        enabled = state.dueAt != null,
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Icon(Icons.Filled.Alarm, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.size(8.dp))
-                        Text(
-                            if (state.dueAt != null) UiFormats.formatTimeOnly(state.dueAt!!)
-                            else stringResource(R.string.add_time_pick_time),
-                        )
-                    }
+                            val pickedCal = Calendar.getInstance().apply { timeInMillis = picked }
+                            cal.set(Calendar.HOUR_OF_DAY, pickedCal.get(Calendar.HOUR_OF_DAY))
+                            cal.set(Calendar.MINUTE, pickedCal.get(Calendar.MINUTE))
+                            cal.set(Calendar.SECOND, 0)
+                            cal.set(Calendar.MILLISECOND, 0)
+                            vm.onDueAtChange(cal.timeInMillis)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Filled.Alarm, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.size(8.dp))
+                    Text(
+                        if (state.dueAt != null) UiFormats.formatTimeOnly(state.dueAt!!)
+                        else stringResource(R.string.add_time_pick_time),
+                    )
                 }
                 if (state.dueAt != null) {
                     Row(
@@ -753,4 +798,11 @@ private fun showTimePicker(
         cal.set(Calendar.MINUTE, minute)
         onPicked(cal.timeInMillis)
     }, cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), false).show()
+}
+
+private fun isSameDay(a: Long, b: Long): Boolean {
+    val calA = Calendar.getInstance().apply { timeInMillis = a }
+    val calB = Calendar.getInstance().apply { timeInMillis = b }
+    return calA.get(Calendar.YEAR) == calB.get(Calendar.YEAR) &&
+        calA.get(Calendar.DAY_OF_YEAR) == calB.get(Calendar.DAY_OF_YEAR)
 }

@@ -16,6 +16,8 @@
     <string name="add_note_label">Note</string>
     <string name="add_location_label">Location</string>
     <string name="add_time_label">Time (optional)</string>
+    <string name="add_time_today">Today</string>
+    <string name="add_time_tomorrow">Tomorrow</string>
     <string name="add_time_pick_date">Pick date</string>
     <string name="add_time_pick_time">Pick time</string>
     <string name="add_time_clear">Clear</string>
