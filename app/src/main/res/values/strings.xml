@@ -25,6 +25,8 @@
     <string name="add_snooze_label">Snooze interval (minutes)</string>
     <string name="add_recurrence_label">Repeat</string>
     <string name="add_recurrence_interval">Every N days</string>
+    <string name="add_recurrence_end_date">End date (optional)</string>
+    <string name="add_recurrence_end_date_clear">Clear end date</string>
     <string name="add_nag_toggle">Keep nagging until done</string>
     <string name="add_nag_interval">Nag interval (minutes)</string>
 

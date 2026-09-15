@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,6 +31,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MyLocation
@@ -438,6 +440,45 @@ fun AddEditScreen(
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                         )
+                    }
+                    // End date for recurring reminders
+                    if (state.recurrenceType != 0) {
+                        Spacer(Modifier.height(8.dp))
+                        var showRecurrenceEndDatePicker by remember { mutableStateOf(false) }
+                        OutlinedButton(onClick = {
+                            haptics.tap()
+                            showRecurrenceEndDatePicker = true
+                        }) {
+                            Icon(Icons.Filled.Event, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                state.recurrenceEndDate?.let { UiFormats.formatDateOnly(it) }
+                                    ?: stringResource(R.string.add_recurrence_end_date)
+                            )
+                        }
+                        if (state.recurrenceEndDate != null) {
+                            TextButton(onClick = {
+                                haptics.tap()
+                                vm.onRecurrenceEndDateChange(null)
+                            }) {
+                                Text(stringResource(R.string.add_recurrence_end_date_clear))
+                            }
+                        }
+                        if (showRecurrenceEndDatePicker) {
+                            DatePickerDialog(
+                                context,
+                                { _, year, month, day ->
+                                    val cal = Calendar.getInstance().apply {
+                                        set(year, month, day, 23, 59, 59)
+                                    }
+                                    vm.onRecurrenceEndDateChange(cal.timeInMillis)
+                                    showRecurrenceEndDatePicker = false
+                                },
+                                Calendar.getInstance().get(Calendar.YEAR),
+                                Calendar.getInstance().get(Calendar.MONTH),
+                                Calendar.getInstance().get(Calendar.DAY_OF_MONTH),
+                            ).show()
+                        }
                     }
                 }
             }
