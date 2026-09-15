@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -44,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aditya.ping.R
 import com.aditya.ping.data.ReminderListRepository
+import com.aditya.ping.ui.components.BannerAd
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -169,6 +171,11 @@ fun ListsScreen(onBack: () -> Unit) {
                                 }
                             }
                         }
+                    }
+                    // Banner ad at bottom of lists
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        BannerAd()
                     }
                 }
             }

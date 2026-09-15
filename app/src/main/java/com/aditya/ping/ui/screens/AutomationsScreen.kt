@@ -64,6 +64,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aditya.ping.R
 import com.aditya.ping.data.AutomationEntity
 import com.aditya.ping.data.AutomationRepository
+import com.aditya.ping.ui.components.BannerAd
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -112,6 +113,11 @@ fun AutomationsScreen() {
                         onToggle = { vm.toggleEnabled(automation.id, it) },
                         onDelete = { vm.delete(automation.id) },
                     )
+                }
+                // Banner ad at bottom of automations list
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    BannerAd()
                 }
             }
         }

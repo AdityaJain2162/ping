@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aditya.ping.R
 import com.aditya.ping.data.ReminderRepository
+import com.aditya.ping.ui.components.BannerAd
 import com.aditya.ping.ui.components.ReminderCard
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -364,6 +365,12 @@ fun CalendarScreen(onBack: () -> Unit, onEdit: (Long) -> Unit) {
                     )
                 }
             }
+        }
+
+        // Banner ad at bottom of calendar
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+            BannerAd()
         }
     }
 }

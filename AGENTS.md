@@ -302,8 +302,11 @@ surfaceContainer = #111111
 - `AdView` is created inside the `BannerAd` composable using `AndroidView`.
 - In `debug` builds, `RequestConfiguration` is set to
   `TestDeviceIds` so all requests return test ads.
-- Banner ads are shown only on `HomeScreen` (bottom of list). Never on
-  `AddEditScreen` (user is mid-task) or `SettingsScreen`.
+- Banner ads are shown at the bottom of list/content screens: `HomeScreen`,
+  `CalendarScreen`, `SavedPlacesScreen`, `AutomationsScreen`, `HistoryScreen`,
+  `ListsScreen`, and `SettingsScreen`. Never on `AddEditScreen` (user is
+  mid-task) or `AlarmActivity` (full-screen alarm). Ads are always the last
+  item in a scrollable list so they never cover or push content.
 
 ### Production checklist
 

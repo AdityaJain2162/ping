@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,6 +39,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aditya.ping.R
 import com.aditya.ping.data.PingDatabase
 import com.aditya.ping.data.ReminderRepository
+import com.aditya.ping.ui.components.BannerAd
 import com.aditya.ping.util.UiFormats
 import com.aditya.ping.ui.theme.TimestampStyle
 
@@ -125,6 +128,11 @@ fun HistoryScreen(onBack: () -> Unit) {
                             modifier = Modifier.padding(start = 28.dp, top = 2.dp),
                         )
                     }
+                }
+                // Banner ad at bottom of history
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    BannerAd()
                 }
             }
         }

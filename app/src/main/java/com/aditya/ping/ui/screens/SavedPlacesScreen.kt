@@ -49,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aditya.ping.R
 import com.aditya.ping.data.SavedPlaceRepository
+import com.aditya.ping.ui.components.BannerAd
 import com.aditya.ping.util.GeoCoderUtil
 import com.aditya.ping.util.LocationUtil
 import com.aditya.ping.util.PermissionUtil
@@ -238,6 +239,11 @@ fun SavedPlacesScreen(onBack: () -> Unit) {
                                 }
                             }
                         }
+                    }
+                    // Banner ad at bottom of saved places
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        BannerAd()
                     }
                 }
             }

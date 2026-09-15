@@ -40,6 +40,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aditya.ping.R
 import com.aditya.ping.data.ThemeRepository
 import com.aditya.ping.domain.ThemeMode
+import com.aditya.ping.ui.components.BannerAd
 import com.aditya.ping.util.QuietHoursManager
 import com.aditya.ping.util.ImportExportManager
 import kotlinx.coroutines.launch
@@ -234,6 +235,9 @@ fun SettingsScreen(onBack: () -> Unit) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            Spacer(Modifier.height(24.dp))
+            BannerAd()
         }
     }
 }
