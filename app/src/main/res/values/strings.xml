@@ -116,7 +116,7 @@
     <string name="tab_calendar">Calendar</string>
     <string name="tab_automations">Automations</string>
     <string name="automations_title">Automations</string>
-    <string name="automations_subtitle">Trigger reminders and actions with NFC tags, WiFi, Bluetooth, and webhooks. Coming soon.</string>
+    <string name="automations_subtitle">Create reusable actions triggered by location, Wi-Fi, Bluetooth, NFC, or webhooks. Link them to reminders for one-tap execution.</string>
 
     <!-- Automation strings -->
     <string name="automation_add">Add automation</string>
